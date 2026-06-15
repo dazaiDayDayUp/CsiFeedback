@@ -1,0 +1,27 @@
+# CSI Feedback reproduction environment
+# Python 3.12
+
+# PyTorch (install CPU or GPU wheel according to your platform)
+# GPU example: pip install torch==2.2.2+cu118 torchvision==0.17.2+cu118 torchaudio==2.2.2+cu118 --index-url https://download.pytorch.org/whl/cu118
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+
+# Scientific stack
+numpy<2.0
+scipy>=1.8.0
+matplotlib>=3.5.0
+
+# Utilities
+pyyaml>=6.0
+packaging>=21.0
+
+# Progress bars and terminal colors
+tqdm>=4.65.0
+colorama>=0.4.6
+
+# Configuration and testing
+pytest>=7.0
+
+# Optional: FLOPs counting (kept for compatibility with scripts that use it)
+thop>=0.1.1

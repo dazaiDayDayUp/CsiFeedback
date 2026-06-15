@@ -1,0 +1,33 @@
+model:
+  name: "clnet"
+  reduction: 4
+data:
+  data_dir: "./data"
+  scenario: "indoor"
+  batch_size: 200
+  num_workers: 0
+  pin_memory: false
+  load_raw: true
+
+optimizer:
+  name: "adam"
+  lr: 0.002
+  betas: [0.9, 0.999]
+  weight_decay: 0.0
+  separate_enc_dec: false
+
+scheduler:
+  name: "cosine"
+  T_max: null
+  T_warmup: null
+  eta_min: 0.00005
+training:
+  epochs: 1000
+  device: "auto"
+  seed: null
+  val_freq: 10
+  test_freq: 10
+  print_freq: 20
+  checkpoint_dir: "./experiments"
+  checkpoint_freq: 50
+  resume: null

@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "csifeedback"
+version = "0.1.0"
+description = "Unified PyTorch implementations of CLNet, STNet, and CsiNet for Massive MIMO CSI feedback"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+keywords = ["massive mimo", "csi feedback", "deep learning", "pytorch"]
+dependencies = [
+    "torch>=2.0.0",
+    "numpy<2.0",
+    "scipy>=1.8.0",
+    "matplotlib>=3.5.0",
+    "pyyaml>=6.0",
+    "packaging>=21.0",
+    "tqdm>=4.65.0",
+    "colorama>=0.4.6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "thop>=0.1.1"]
+
+[tool.setuptools.packages.find]
+exclude = ["tests", "scripts", "archive", "experiments"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning:thop.*",
+]

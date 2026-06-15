@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.eggs/
+dist/
+build/
+
+# Virtual environment
+venv/
+.env/
+
+# PyTorch checkpoints and experiments
+experiments/*
+!experiments/.gitkeep
+*.pth
+*.pth.tar
+*.h5
+*.ckpt
+
+# Data (keep directory but ignore large .mat files)
+data/*.mat
+!data/.gitkeep
+
+# Claude Code session files
+.claude/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+*.out
+
+# Jupyter
+.ipynb_checkpoints/
+
+# pytest
+.pytest_cache/
