@@ -16,14 +16,22 @@ conda activate csifeedback
 
 # 安装依赖（首次使用）
 pip install -r requirements.txt
+```
 
-# 训练 CLNet indoor CR=1/4
-python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml
+> ⚠️ **注意**：训练前请通过 `CUDA_VISIBLE_DEVICES` 指定 GPU，否则可能因 CUDA 初始化失败而报错。
+
+```bash
+# 训练 CLNet indoor CR=1/4（指定 GPU 0）
+CUDA_VISIBLE_DEVICES=0 python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml
 
 # 根据服务器负载覆盖 batch size 等任意配置项
-python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml \
+CUDA_VISIBLE_DEVICES=0 python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml \
     -o training.epochs=50 data.batch_size=64
+```
 
+### 评估
+
+```bash
 # 评估已保存的检查点
 python scripts/evaluate.py \
     --config csifeedback/configs/clnet_indoor_cr4.yaml \
@@ -32,17 +40,16 @@ python scripts/evaluate.py \
 
 ## 批量训练
 
-使用 `scripts/train_all.py` 可依次训练 `csifeedback/configs/` 下的所有 YAML 配置，并支持指定 GPU：
+使用 `scripts/train_all.py` 可依次训练 `csifeedback/configs/` 下的所有 YAML 配置：
+
+> ⚠️ **注意**：批量训练前也请通过 `CUDA_VISIBLE_DEVICES` 指定 GPU，否则可能因 CUDA 初始化失败而报错。
 
 ```bash
-# 使用默认 GPU 0
-python scripts/train_all.py
-
-# 指定 GPU 1
-python scripts/train_all.py --device 1
+# 训练所有配置（指定 GPU 0）
+CUDA_VISIBLE_DEVICES=0 python scripts/train_all.py
 
 # 只训练匹配某一模式的配置
-python scripts/train_all.py --pattern "clnet_*.yaml"
+CUDA_VISIBLE_DEVICES=0 python scripts/train_all.py --pattern "clnet_*.yaml"
 ```
 
 该脚本只是一个简单的循环包装，训练输出会直接打印到终端；如需保存日志，可重定向到文件。
@@ -138,7 +145,8 @@ pytest tests/
 - PyTorch：2.11.0+cu128（CUDA 12.8）
 - GPU：2 × NVIDIA GeForce RTX 5090（32 GB 显存）
 
-训练前请先激活 `csifeedback` 环境：`conda activate csifeedback`。
+训练前请先激活 `csifeedback` 环境：`conda activate csifeedback`，
+并通过 `CUDA_VISIBLE_DEVICES` 指定要使用的 GPU（例如 `CUDA_VISIBLE_DEVICES=0`），否则可能因 CUDA 初始化失败而报错。
 
 ## 引用
 

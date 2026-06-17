@@ -4,12 +4,13 @@
 用法示例::
 
     python scripts/train_all.py
-    python scripts/train_all.py --device 1
     python scripts/train_all.py --pattern "clnet_*.yaml"
+
+每个配置的训练设备由对应 YAML 文件中的 ``training.device`` 决定，
+与 ``scripts/train.py`` 的行为保持一致。
 """
 
 import argparse
-import os
 import re
 import subprocess
 import sys
@@ -22,11 +23,6 @@ TRAIN_SCRIPT = REPO_ROOT / "scripts" / "train.py"
 
 def main():
     parser = argparse.ArgumentParser(description="批量训练所有 CSI 反馈配置")
-    parser.add_argument(
-        "--device",
-        default="0",
-        help="指定 CUDA 设备编号，例如 0 或 1（默认：0）",
-    )
     parser.add_argument(
         "--pattern",
         default="*.yaml",
@@ -42,10 +38,8 @@ def main():
         print(f"未找到匹配 {args.pattern!r} 的配置文件：{CONFIG_DIR}")
         return
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.device
-
     for cfg in configs:
-        print(f"\n>>> [{cfg.name}] 使用 GPU {args.device} 开始训练")
+        print(f"\n>>> [{cfg.name}] 开始训练")
         subprocess.run(
             [sys.executable, str(TRAIN_SCRIPT), "--config", str(cfg)],
             check=False,

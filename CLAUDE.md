@@ -67,21 +67,23 @@ COST2100 `.mat` 文件放在 `data/`：
 
 ### 训练
 
+> **注意**：训练前请通过 `CUDA_VISIBLE_DEVICES` 指定 GPU（例如 `CUDA_VISIBLE_DEVICES=0`），否则可能因 CUDA 初始化失败而报错。
+
 ```bash
-python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml
+CUDA_VISIBLE_DEVICES=0 python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml
 ```
 
 根据服务器负载可覆盖 batch size：
 
 ```bash
-python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml \
+CUDA_VISIBLE_DEVICES=0 python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml \
     -o data.batch_size=64
 ```
 
 覆盖任意配置项：
 
 ```bash
-python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml \
+CUDA_VISIBLE_DEVICES=0 python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml \
     -o training.epochs=50 data.batch_size=200
 ```
 
@@ -140,7 +142,7 @@ pytest tests/
 
 - **原始 `CLNet/`、`STNet/`、`CsiNet/` 目录已删除**，完整历史版本保留在 `archive/`，归档时仅保留源码与 README，中间产物已清理。
 - **TensorFlow 未安装**，不要尝试运行 `archive/CsiNet/` 下的 Keras 脚本。
-- **GPU 服务器环境**：当前使用实验室 Linux 服务器与 Miniforge `csifeedback` 环境；批量训练建议使用 `scripts/train_all.py`。
+- **GPU 服务器环境**：当前使用实验室 Linux 服务器与 Miniforge `csifeedback` 环境；训练前请通过 `CUDA_VISIBLE_DEVICES` 指定 GPU，否则可能因 CUDA 初始化失败而报错。批量训练建议使用 `scripts/train_all.py`。
 - **模型层定义已原样保留**，重构只改变工程组织，不改变网络结构。
 - **超参数已与原始仓库对齐**：CLNet cosine scheduler 使用 `lr=0.002`，warmup 从 0 开始；STNet 使用双 Adam `betas=(0.5, 0.999)`；CsiNet 使用单 Adam 并按 val loss 保存最优。
 - **开闭原则**：添加新模型只需在 `csifeedback/models/__init__.py` 和 `csifeedback/trainers/__init__.py` 注册，通过 `model.extra` 传递自定义参数，无需修改已有模型代码。
@@ -150,5 +152,3 @@ pytest tests/
 - CLNet indoor：1/4 约 -29.16 dB，1/64 约 -6.34 dB。
 - STNet indoor：1/4 约 -31.81 dB，1/64 约 -7.81 dB。
 - CsiNet indoor：1/4 约 -17.36 dB，1/16 约 -8.65 dB，1/32 约 -6.24 dB，1/64 约 -5.84 dB。
-
-目前仅做了短周期验证，指标距离论文值还很远，原因是训练周期过短，与模型实现无关。
