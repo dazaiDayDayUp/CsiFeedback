@@ -23,7 +23,7 @@ python scripts/train.py \
     -o training.epochs=50 data.batch_size=16
 ```
 
-> 提示：本地 2GB GPU 请将 `data.batch_size` 设为 16–32；服务器大显存可直接使用默认 200。
+> 提示：可根据服务器显存与负载调整 `data.batch_size` 等训练参数。
 
 ## 训练检查点
 

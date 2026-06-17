@@ -12,24 +12,24 @@
 
 原先三个独立的 GitHub 项目已归档到 `archive/`，不再维护。当前 actively maintained 的代码统一在 `csifeedback/` 包中，使用 YAML 配置驱动训练与评估。
 
-当前工作环境为 Windows 11 笔记本，Python 3.12，已安装 GPU 版 PyTorch（CUDA 11.8），显卡为 NVIDIA GeForce MX450（2GB 显存）。TensorFlow 未安装，原始 Keras/TF 脚本仅作为历史参考保留在 `archive/` 中。
+当前工作环境为实验室 Linux GPU 服务器，使用 Miniforge 管理的 `csifeedback` Conda 环境（Python 3.12.13），已安装 GPU 版 PyTorch 2.11.0+cu128（CUDA 12.8），显卡为 2 × NVIDIA GeForce RTX 5090（32 GB 显存）。TensorFlow 未安装，原始 Keras/TF 脚本仅作为历史参考保留在 `archive/` 中。
 
 ## 环境配置
 
 ```bash
-# 激活本地 venv
-source venv/Scripts/activate
+# 激活 miniforge 环境
+conda activate csifeedback
 
 # 安装依赖（已包含 pytest、pyyaml）
 pip install -r requirements.txt
 ```
 
-当前已安装核心包：PyTorch 2.2.2（CUDA 11.8）、numpy 1.26.4、scipy、matplotlib、tqdm、colorama、thop、pytest、pytest-sugar、pyyaml。
+当前已安装核心包：PyTorch 2.11.0+cu128、numpy 1.26.4、scipy、matplotlib、tqdm、colorama、thop、pytest、pytest-sugar、pyyaml。
 
 ## 目录结构
 
 ```
-D:/PythonProjects/CsiFeedback/
+/home/wzh/myProjects/CsiFeedback/
 ├── csifeedback/          # 统一 Python 包
 │   ├── models/           # clnet.py、stnet.py、csinet.py、base.py
 │   ├── data/             # cost2100.py（统一数据加载）
@@ -71,11 +71,11 @@ COST2100 `.mat` 文件放在 `data/`：
 python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml
 ```
 
-本地 2GB GPU 需要减小 batch size：
+根据服务器负载可覆盖 batch size：
 
 ```bash
 python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml \
-    -o data.batch_size=16
+    -o data.batch_size=64
 ```
 
 覆盖任意配置项：
@@ -140,11 +140,10 @@ pytest tests/
 
 - **原始 `CLNet/`、`STNet/`、`CsiNet/` 目录已删除**，完整历史版本保留在 `archive/`，归档时仅保留源码与 README，中间产物已清理。
 - **TensorFlow 未安装**，不要尝试运行 `archive/CsiNet/` 下的 Keras 脚本。
-- **GPU 显存很小（2GB）**，完整训练建议使用更大显存的机器。本地 smoke test 需要将 `batch_size` 降到 16 或 32，完整 1000 epoch 在 MX450 上仍然很慢。
+- **GPU 服务器环境**：当前使用实验室 Linux 服务器与 Miniforge `csifeedback` 环境；批量训练建议使用 `scripts/train_all.py`。
 - **模型层定义已原样保留**，重构只改变工程组织，不改变网络结构。
 - **超参数已与原始仓库对齐**：CLNet cosine scheduler 使用 `lr=0.002`，warmup 从 0 开始；STNet 使用双 Adam `betas=(0.5, 0.999)`；CsiNet 使用单 Adam 并按 val loss 保存最优。
 - **开闭原则**：添加新模型只需在 `csifeedback/models/__init__.py` 和 `csifeedback/trainers/__init__.py` 注册，通过 `model.extra` 传递自定义参数，无需修改已有模型代码。
-- **UTF-8 输出**：Windows 终端若出现中文乱码，可在训练前执行 `chcp 65001`。
 
 ## 论文参考指标
 
@@ -152,4 +151,4 @@ pytest tests/
 - STNet indoor：1/4 约 -31.81 dB，1/64 约 -7.81 dB。
 - CsiNet indoor：1/4 约 -17.36 dB，1/16 约 -8.65 dB，1/32 约 -6.24 dB，1/64 约 -5.84 dB。
 
-目前本地仅做了短周期验证，指标距离论文值还很远，原因是训练周期过短，与模型实现无关。
+目前仅做了短周期验证，指标距离论文值还很远，原因是训练周期过短，与模型实现无关。

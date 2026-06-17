@@ -11,25 +11,41 @@
 ## 快速开始
 
 ```bash
-# 激活本地虚拟环境
-source venv/Scripts/activate   # Git Bash / POSIX shell on Windows
+# 激活 miniforge 环境
+conda activate csifeedback
 
-# 训练 CLNet indoor CR=1/4（本地 2GB GPU 需要减小 batch size）
-python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml \
-    -o data.batch_size=16
+# 安装依赖（首次使用）
+pip install -r requirements.txt
 
-# 在服务器等大显存机器上训练（可使用默认 batch_size=200）
+# 训练 CLNet indoor CR=1/4
 python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml
 
-# 训练时覆盖任意配置项
+# 根据服务器负载覆盖 batch size 等任意配置项
 python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml \
-    -o training.epochs=50 data.batch_size=16
+    -o training.epochs=50 data.batch_size=64
 
 # 评估已保存的检查点
 python scripts/evaluate.py \
     --config csifeedback/configs/clnet_indoor_cr4.yaml \
     --checkpoint experiments/clnet/indoor_cr4/YYYYMMDD_HHMMSS/checkpoints/last.pth
 ```
+
+## 批量训练
+
+使用 `scripts/train_all.py` 可依次训练 `csifeedback/configs/` 下的所有 YAML 配置，并支持指定 GPU：
+
+```bash
+# 使用默认 GPU 0
+python scripts/train_all.py
+
+# 指定 GPU 1
+python scripts/train_all.py --device 1
+
+# 只训练匹配某一模式的配置
+python scripts/train_all.py --pattern "clnet_*.yaml"
+```
+
+该脚本只是一个简单的循环包装，训练输出会直接打印到终端；如需保存日志，可重定向到文件。
 
 ## 仓库结构
 
@@ -71,8 +87,7 @@ python scripts/evaluate.py \
 - **配置矩阵**：已补全 30 个 YAML 配置（3 模型 × 2 场景 × 全部压缩比，CsiNet 额外包含 1/8）。
 - **测试**：`pytest tests/` 全部通过（67 passed，0 skipped），覆盖模型、数据、指标、配置加载、单 batch 过拟合、OCP 扩展点。
 - **实现一致性**：已完成与三个原始仓库的全面对照，修复了 CLNet cosine warmup 学习率起点不一致的问题；网络结构、数据预处理、指标计算与原始实现一致。
-- **训练验证**：已在 GPU 上跑通 CLNet indoor CR=1/4 的 1 epoch smoke test（batch_size=16，NMSE 4.87 dB，rho 0.419），距离论文值还很远，原因是训练周期过短。
-- **完整训练**：待迁移到更大显存的 GPU 服务器后批量执行。
+- **完整训练**：使用 `scripts/train_all.py` 批量执行所有 YAML 配置。
 
 ## 主要特性
 
@@ -112,16 +127,18 @@ pytest tests/
 
 训练产生的检查点按时间戳保存在 `experiments/{model_name}/{scenario}_cr{X}/YYYYMMDD_HHMMSS/checkpoints/` 下。
 
-## 硬件说明
+## 运行环境
 
-当前开发环境：
+当前部署在实验室 Linux GPU 服务器上：
 
-- Windows 11 笔记本
-- Python 3.12
-- PyTorch 2.2.2（CUDA 11.8）
-- NVIDIA GeForce MX450（2GB 显存）
+- OS：Linux
+- 环境管理器：Miniforge
+- Conda 环境：`csifeedback`
+- Python：3.12.13
+- PyTorch：2.11.0+cu128（CUDA 12.8）
+- GPU：2 × NVIDIA GeForce RTX 5090（32 GB 显存）
 
-在 2GB 显存上训练时，需要将 `batch_size` 降到 16–32。完整 1000 epoch 训练建议在更大显存的 GPU 工作站或服务器上运行。CPU-only 环境也可以运行 smoke test，但完整训练非常慢。
+训练前请先激活 `csifeedback` 环境：`conda activate csifeedback`。
 
 ## 引用
 
