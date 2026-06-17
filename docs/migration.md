@@ -20,7 +20,7 @@
 ```bash
 python scripts/train.py \
     --config csifeedback/configs/clnet_indoor_cr4.yaml \
-    -o training.epochs=50 data.batch_size=16
+    -o training.epochs=50 data.batch_size=200
 ```
 
 > 提示：可根据服务器显存与负载调整 `data.batch_size` 等训练参数。

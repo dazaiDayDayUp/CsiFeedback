@@ -10,6 +10,7 @@
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -33,7 +34,10 @@ def main():
     )
     args = parser.parse_args()
 
-    configs = sorted(CONFIG_DIR.glob(args.pattern))
+    configs = sorted(
+        CONFIG_DIR.glob(args.pattern),
+        key=lambda p: [int(x) if x.isdigit() else x for x in re.split(r"(\d+)", p.name)],
+    )
     if not configs:
         print(f"未找到匹配 {args.pattern!r} 的配置文件：{CONFIG_DIR}")
         return

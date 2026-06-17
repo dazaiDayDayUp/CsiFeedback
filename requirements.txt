@@ -2,7 +2,7 @@
 # Python 3.12
 
 # PyTorch (install CPU or GPU wheel according to your platform)
-# GPU example: pip install torch==2.2.2+cu118 torchvision==0.17.2+cu118 torchaudio==2.2.2+cu118 --index-url https://download.pytorch.org/whl/cu118
+# GPU example (CUDA 12.8): pip install torch==2.11.0+cu128 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 torch>=2.0.0
 torchvision>=0.15.0
 torchaudio>=2.0.0

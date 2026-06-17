@@ -82,7 +82,7 @@ python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml \
 
 ```bash
 python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml \
-    -o training.epochs=50 data.batch_size=16
+    -o training.epochs=50 data.batch_size=200
 ```
 
 训练时会显示：
