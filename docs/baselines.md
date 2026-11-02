@@ -1,6 +1,6 @@
 # Baseline 协议与参考结果
 
-本文档固定 CLNet、STNet、CsiNet 三个 baseline 的训练/评测协议，作为新 idea
+本文档固定 CLNet、STNet、CsiNet 三个 baseline 的训练/评测协议，作为新模型
 公平对比的参照。baseline 代码、数据划分与指标实现属于**受保护资产**：
 除非有明确理由并重跑全部 baseline，否则不要修改。
 
@@ -25,7 +25,7 @@
 | batch size | 200 |
 | epochs | 1000 |
 | 损失 | MSE |
-| 随机种子 | `null`（不做固定种子；复现实验时建议显式设置 `training.seed`） |
+| 随机种子 | `null`（不做固定种子；正式实验建议显式设置 `training.seed`） |
 | 评估频率 | `val_freq=10`、`test_freq=10` |
 | 检查点频率 | 每 50 epoch |
 | 最优模型 | `training.select_best: "all"`：test rho 最优 + test NMSE 最优（CsiNet 额外按 val loss） |
@@ -101,7 +101,7 @@ NMSE 单位为 dB（越低越好），rho 为余弦相似度（越高越好）�
 
 > 论文值仅供方向性参考。不同论文的训练细节、数据预处理和 rho/NMSE 实现可能不同。
 
-## 复现命令
+## 训练命令
 
 ```bash
 conda activate csifeedback
@@ -139,12 +139,12 @@ python scripts/compare.py --latest --min-epochs 1000 --format markdown
 1. **不要修改** baseline 的网络结构、初始化、优化器超参数和训练循环，
    除非目标是修复明确的实现错误。
 2. **不要修改** 数据加载、划分方式、归一化方式和指标实现。任何改动都会破坏
-   与历史结果的对比。
+   与既有结果的对比。
 3. 如果确实修改了上述内容，必须：
    - 在 PR/提交说明中写清原因；
    - 重跑全部 30 个 baseline；
    - 更新 `docs/baselines.md` 与 README 的参考表；
-   - 在文档中注明新旧结果不可直接比较。
+   - 在文档中注明改动前后的结果不可直接比较。
 4. 新 idea 必须使用相同的 `data/` 文件、相同的 train/val/test 划分和相同的
    `compute_nmse` / `compute_rho`。
 5. 不要用测试集调参。模型选择应基于验证集；测试集只用于最终报告。

@@ -187,3 +187,16 @@ done
 - 修复测试。
 
 工程改动同样需要 `pytest tests/` 通过，并且不能改变 baseline 的数值行为。
+
+## 7. 论文产出
+
+研究工作的最终交付物是论文级证据。投稿前逐项检查
+[`paper_checklist.md`](paper_checklist.md)：
+
+- 公平的 SOTA 对比与完整 CR 矩阵；
+- 多随机种子均值 ± 标准差；
+- 消融实验；
+- 参数量 / FLOPs / 推理开销；
+- 可复现的配置、commit、`metrics.json` 与检查点。
+
+`docs/ideas/<name>.md` 应能支撑论文的方法、实验和消融章节。

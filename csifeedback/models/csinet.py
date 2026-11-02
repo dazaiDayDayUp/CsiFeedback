@@ -1,6 +1,6 @@
-r"""CsiNet：Wen 等人《Deep Learning for Massive MIMO CSI Feedback》（IEEE WCL 2018）。
+r"""CsiNet baseline：Wen 等人《Deep Learning for Massive MIMO CSI Feedback》（IEEE WCL 2018）。
 
-PyTorch 复现版本从 ``CsiNet/csinet_pytorch.py`` 迁移而来，层定义与初始化均原样保留。
+实现 CsiNet 的层定义与初始化，作为新模型的公平对比基线。
 """
 
 import torch.nn as nn

@@ -1,4 +1,4 @@
-"""模型实例化、前向形状与行为保留的测试。"""
+"""模型实例化、前向形状与 baseline 行为稳定性的测试。"""
 
 import sys
 from pathlib import Path
@@ -58,108 +58,6 @@ def test_deterministic_forward(name, kwargs):
         out1 = model(x)
         out2 = model(x)
     torch.testing.assert_close(out1, out2)
-
-
-@pytest.mark.parametrize("name,kwargs,legacy_module_path,legacy_factory", [
-    (
-        "clnet",
-        {"reduction": 4},
-        "archive/CLNet/models/clnet.py",
-        "clnet",
-    ),
-    (
-        "csinet",
-        {"encoded_dim": 512},
-        "archive/CsiNet/csinet_pytorch.py",
-        "CsiNet",
-    ),
-])
-def test_new_vs_legacy_forward(name, kwargs, legacy_module_path, legacy_factory):
-    """比较新模型与原始实现的前向输出。"""
-    import importlib.util
-
-    legacy_path = repo_root / legacy_module_path
-    if not legacy_path.exists():
-        pytest.skip(f"未找到原始文件：{legacy_path}")
-
-    if name == "csinet":
-        # CsiNet 原始脚本在顶层执行数据加载、matplotlib 导入和完整训练循环。
-        # 这里只提取类定义与全局常量，避免执行训练代码和加载 matplotlib。
-        legacy = _load_csinet_class_only(legacy_path)
-    else:
-        spec = importlib.util.spec_from_file_location("legacy_model", legacy_path)
-        legacy = importlib.util.module_from_spec(spec)
-
-        # 使原始脚本的本地导入可解析。
-        legacy_root = legacy_path.parent.parent
-        sys.path.insert(0, str(legacy_root))
-
-        # 原始 CLNet 导入 utils.logger 时会解析 sys.argv；此处抑制该行为。
-        old_argv = sys.argv
-        sys.argv = ["legacy"]
-        try:
-            spec.loader.exec_module(legacy)
-        except Exception as exc:
-            sys.path.pop(0)
-            pytest.skip(f"无法加载原始模块：{exc}")
-        finally:
-            sys.argv = old_argv
-            if sys.path[0] == str(legacy_root):
-                sys.path.pop(0)
-
-    torch.manual_seed(42)
-    x = torch.randn(2, 2, 32, 32)
-
-    new_model = get_model(name, **kwargs)
-    legacy_model = getattr(legacy, legacy_factory)(**kwargs)
-
-    # 对齐权重，以便比较前向行为而非随机初始化。
-    legacy_model.load_state_dict(new_model.state_dict())
-
-    new_model.eval()
-    legacy_model.eval()
-    with torch.no_grad():
-        new_out = new_model(x)
-        legacy_out = legacy_model(x)
-
-    torch.testing.assert_close(new_out, legacy_out, atol=1e-6, rtol=1e-5)
-
-
-def _load_csinet_class_only(path: Path):
-    """从 CsiNet 原始脚本中仅提取类定义和全局常量，不执行训练代码。"""
-    import ast
-    from types import SimpleNamespace
-
-    with open(path, "r", encoding="utf-8") as f:
-        source = f.read()
-
-    tree = ast.parse(source)
-
-    def _is_safe_assign(node):
-        """保留不含函数调用的常量赋值（如 img_height = 32）。"""
-        if isinstance(node, (ast.Assign, ast.AnnAssign)):
-            value = node.value
-            # 如果赋值右侧包含任何 Call，就过滤掉（如 load_data(...)）。
-            for child in ast.walk(value):
-                if isinstance(child, ast.Call):
-                    return False
-            return True
-        return False
-
-    filtered_body = []
-    for node in tree.body:
-        if isinstance(node, (ast.Import, ast.ImportFrom, ast.ClassDef)):
-            filtered_body.append(node)
-        elif _is_safe_assign(node):
-            filtered_body.append(node)
-
-    new_tree = ast.Module(body=filtered_body, type_ignores=[])
-    ast.fix_missing_locations(new_tree)
-
-    namespace = {}
-    compiled = compile(new_tree, filename=str(path), mode="exec")
-    exec(compiled, namespace)
-    return SimpleNamespace(**namespace)
 
 
 def test_clnet_encoder_decoder_separation():

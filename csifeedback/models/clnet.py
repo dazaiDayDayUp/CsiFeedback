@@ -1,7 +1,6 @@
-r"""CLNet：面向 Massive MIMO CSI 反馈的复数输入轻量化神经网络。
+r"""CLNet baseline：面向 Massive MIMO CSI 反馈的复数输入轻量化神经网络。
 
-本模块从 ``CLNet/models/clnet.py`` 迁移而来，保留了原始实现的层定义、
-初始化方式与前向行为。
+实现 CLNet 的网络结构、初始化与前向行为，作为新模型的公平对比基线。
 """
 
 from collections import OrderedDict

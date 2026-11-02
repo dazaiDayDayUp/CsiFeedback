@@ -59,7 +59,7 @@ csifeedback/configs/ideas/<short-name>/<short-name>_indoor_cr4.yaml
 - 失败模式 / 局限性：
 - 后续建议：
 
-## 复现命令
+## 运行命令
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 python scripts/train.py \

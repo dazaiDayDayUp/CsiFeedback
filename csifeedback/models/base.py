@@ -11,8 +11,7 @@ __all__ = ["CSIAutoencoder"]
 class CSIAutoencoder(nn.Module, ABC):
     """CLNet、STNet、CsiNet 共享的基类。
 
-    子类必须暴露瓶颈维度，并提供分开保存 encoder/decoder 的辅助方法，
-    以满足某些旧版检查点格式的需求。
+    子类必须暴露瓶颈维度，并提供分开保存/加载 encoder 与 decoder 的辅助方法。
     """
 
     @property

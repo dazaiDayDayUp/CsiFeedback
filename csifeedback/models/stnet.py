@@ -1,11 +1,9 @@
-r"""STNet：面向 Massive MIMO CSI 反馈的空间可分离注意力机制。
+r"""STNet baseline：面向 Massive MIMO CSI 反馈的空间可分离注意力机制。
 
-从 ``STNet/stnet_fixed.py`` 迁移而来，保留了所有层定义与前向流程。
-原脚本使用模块级全局变量作为超参数，这里改为构造函数参数。
+实现 STNet 的层定义与前向流程，超参数通过构造函数传入。
 
-重要提示：原始 decoder 将 ``decoder_feature`` 产生的同一个 ``out`` 张量
-复用到两个 WTL 块循环中，其中一个循环在 32×32 分辨率，另一个在 16×16 分辨率。
-PyTorch 会对加法做广播。这一行为被原样保留。
+实现说明：decoder 将 ``decoder_feature`` 产生的同一个 ``out`` 张量复用到两个
+WTL 块循环中，PyTorch 会对加法做广播。该行为是 baseline 的一部分，需保持稳定。
 """
 
 from collections import OrderedDict

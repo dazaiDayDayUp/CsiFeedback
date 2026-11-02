@@ -20,7 +20,7 @@ class STNetTrainer(BaseTrainer):
     """STNet 训练器。
 
     为 encoder 和 decoder 分别使用 Adam 优化器，二者 betas 均为 ``(0.5, 0.999)``。
-    检查点以分开的 encoder/decoder state dict 保存，以保持与原始格式兼容。
+    检查点以分开的 encoder/decoder state dict 保存，便于分别加载。
     """
 
     def __init__(
@@ -93,7 +93,7 @@ class STNetTrainer(BaseTrainer):
         self.logger.info("STNet 从检查点 %s 恢复，当前 epoch %d", resume_path, self.epoch)
 
     def _save_checkpoint(self, filename: str) -> None:
-        # STNet 原始实现分别保存 encoder/decoder 检查点。
+        # STNet 按 encoder/decoder 分别保存检查点。
         path = os.path.join(self.exp_dir, "checkpoints", filename)
         from csifeedback.utils.checkpoint import save_checkpoint
         save_checkpoint(

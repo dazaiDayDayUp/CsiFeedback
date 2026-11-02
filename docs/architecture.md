@@ -1,10 +1,10 @@
 # Baseline 模型架构
 
-本文档详细说明三个 baseline（CLNet、STNet、CsiNet）的网络结构、数据流，以及与原始论文/脚本的对应关系。
+本文档详细说明三个 baseline（CLNet、STNet、CsiNet）的网络结构、数据流，以及与论文的对应关系。
 
-> 这三个模型现在是研究新模型的参照 baseline，不再是项目的最终交付物。
-> 除非修复明确的实现错误，否则不要修改它们的网络结构或训练行为。
-> 新模型的接入方式见 [`research_workflow.md`](research_workflow.md)。
+> 这三个模型是公平对比的固定 baseline，网络结构与训练行为保持稳定。
+> 除非修复明确的实现错误，否则不要修改它们。
+> 新研究模型的接入方式见 [`research_workflow.md`](research_workflow.md)。
 
 ## 目录
 
@@ -128,7 +128,7 @@ Decoder
 
 ### Decoder
 
-Decoder 有一个关键原始行为：**`decoder_feature` 产生的 `out` 张量被复用到两个 WTL 循环中**，PyTorch 会自动 broadcast。
+Decoder 有一个关键实现：**`decoder_feature` 产生的 `out` 张量被复用到两个 WTL 循环中**，PyTorch 会自动 broadcast。
 
 1. `Linear(encoded_dim, 2 * 32 * 32)` 恢复特征
 2. reshape 为 `(N, 2, 32, 32)`
@@ -223,7 +223,7 @@ CsiNet 使用单个 Adam 优化器，并按照验证损失保存最优模型（`
 
 统一入口 `scripts/train.py` 会根据 `model.name` 自动选择对应 trainer；配置中的 `optimizer.betas`、`separate_enc_dec`、`scheduler.name` 需要与模型匹配，具体可参考 `csifeedback/configs/baselines/` 下的示例 YAML。
 
-CLNet 的 cosine warmup 实现与原始代码一致：warmup 阶段学习率从 0 线性增长到初始 lr，之后进入余弦退火到 `eta_min`。
+CLNet 的 cosine warmup：warmup 阶段学习率从 0 线性增长到初始 lr，之后进入余弦退火到 `eta_min`。
 
 ---
 

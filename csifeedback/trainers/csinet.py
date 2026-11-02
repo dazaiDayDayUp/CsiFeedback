@@ -18,7 +18,7 @@ __all__ = ["CsiNetTrainer"]
 class CsiNetTrainer(BaseTrainer):
     """CsiNet 训练器。
 
-    使用单个 Adam 优化器，并按照验证损失保存最优模型，与原始 PyTorch 复现一致。
+    使用单个 Adam 优化器，并按照验证损失保存最优模型，与 baseline 协议一致。
     """
 
     def __init__(

@@ -5,10 +5,12 @@
 
 ## 项目使命
 
-本仓库是 Massive MIMO CSI 反馈的研究平台。当前目标不是复现论文，而是：
+本仓库是 Massive MIMO CSI 反馈研究平台，目标是产出新 SOTA 模型与论文级实验证据，
+支撑论文发表。
 
 > 以 CLNet、STNet、CsiNet 为 baseline，在 COST2100 indoor/outdoor 场景下，
-> 研究并实现新的 SOTA CSI 反馈模型。
+> 用统一的数据、指标和训练/评测流程开展公平对比，形成可复现的 SOTA 结果、
+> 消融实验与论文材料。
 
 研究范围固定为：
 
@@ -19,10 +21,10 @@
 
 ## 非目标与边界
 
-- 不要为了“复现一致性”修改 baseline 的网络结构或训练行为。
-- 不要修改 `archive/`，它只是原始项目的历史参考。
+- baseline 是公平对比的固定参照，不要随意修改其网络结构、训练行为或评测协议。
 - 不要把 `experiments/`、`data/`、`*.pth`、日志提交到 git。
-- 不要用测试集调参；模型选择基于验证集，测试集只用于最终报告。
+- 新 idea 不要用测试集调参，推荐 `training.select_best: "val_loss"`；
+  baseline 为保持既有协议使用 `select_best: "all"`，对比时须注明选择策略。
 - 不要引入未在 `pyproject.toml` / `requirements.txt` 中声明的重量级依赖，
   除非用户明确同意。
 
@@ -66,7 +68,7 @@ git switch -c idea/<short-name>
 
 ## Baseline 完整性（受保护资产）
 
-以下内容视为 baseline 协议的一部分，改动会破坏与历史结果的对比：
+以下内容视为 baseline 协议的一部分，改动会破坏与既有结果的对比：
 
 - `csifeedback/models/{clnet,stnet,csinet}.py`
 - `csifeedback/trainers/{clnet,stnet,csinet}.py`
@@ -79,7 +81,7 @@ git switch -c idea/<short-name>
 1. 在提交说明中写明原因；
 2. 重跑全部 30 个 baseline；
 3. 更新 `docs/baselines.md` 和 README 的参考表；
-4. 注明新旧结果不可直接比较。
+4. 注明改动前后的结果不可直接比较。
 
 新模型必须使用相同的 `data/` 文件、相同的 train/val/test 划分和相同的指标实现。
 
@@ -121,7 +123,7 @@ def create_my_idea(encoded_dim: int = 512, **kwargs) -> CSIAutoencoder:
 ### 实验摘要
 
 `BaseTrainer` 会在每次运行目录写 `metrics.json`，包含配置、最优 rho/NMSE、
-评估历史、耗时、参数量和 git commit。新增训练逻辑时不要绕过它。
+评估记录、耗时、参数量和 git commit。新增训练逻辑时不要绕过它。
 
 ## 实验规范
 
@@ -138,6 +140,18 @@ python scripts/compare.py --latest --min-epochs 1000
 - 报告结果时写清：随机种子、epoch 数、checkpoint 选择策略、是训练中观察到的最优值
   还是 checkpoint 复评值。
 - 负结果也要记录在 `docs/ideas/<name>.md`，不要只留在聊天记录里。
+
+## 论文产出
+
+每个 idea 的最终交付物是论文级证据，不只是代码：
+
+- 完整 CR 矩阵上的公平 SOTA 对比；
+- 关键配置的多随机种子均值 ± 标准差；
+- 关键模块消融；
+- 参数量、FLOPs 与推理开销；
+- 可复现的配置、commit、`metrics.json` 与检查点。
+
+投稿前逐项检查 [`docs/paper_checklist.md`](docs/paper_checklist.md)。
 
 ## 测试与完成标准
 
@@ -156,7 +170,7 @@ pytest tests/ -q
 
 ## Git 规范
 
-- 提交信息使用中文，风格与现有历史一致。
+- 提交信息使用中文，风格与现有提交一致。
 - 除非用户明确要求，不要执行 `git commit`、`git push`、`git reset` 等操作。
 - 不要提交 `experiments/`、`data/`、检查点、日志、`__pycache__`。
 - 提交前检查 `git status`，确认没有把大文件或运行产物带进来。
@@ -175,6 +189,7 @@ pytest tests/ -q
 - 新模型 / 新配置：更新 `docs/ideas/<name>.md`，必要时更新 README。
 - 训练/评测协议变化：更新 `docs/baselines.md`。
 - 工作流变化：更新 `docs/research_workflow.md` 和本文件。
+- 论文级实验 / 投稿准备：更新 `docs/paper_checklist.md` 和 `docs/ideas/<name>.md`。
 - 目录结构变化：更新 README 的仓库结构。
 
 ## 常用命令

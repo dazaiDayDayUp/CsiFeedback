@@ -1,6 +1,6 @@
 """训练器工厂。
 
-baseline 模型使用各自的专用 trainer 以保持原始训练行为；未注册的新模型
+baseline 模型使用各自的专用 trainer 以保持 baseline 训练行为；未注册的新模型
 自动回退到配置驱动的 :class:`DefaultTrainer`。
 """
 

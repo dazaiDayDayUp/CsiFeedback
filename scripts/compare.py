@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """汇总并对比实验运行结果。
 
-优先读取每次运行目录下的 ``metrics.json``；对早期没有该文件的运行，
-回退解析 ``logs/train.log`` 中记录的最优 test rho / NMSE。
+优先读取每次运行目录下的 ``metrics.json``；对只有 ``logs/train.log`` 的运行，
+回退解析其中记录的最优 test rho / NMSE。
 
 示例::
 
@@ -104,7 +104,7 @@ def _from_log(path: Path, root: Path) -> Optional[Run]:
     )
 
 
-def discover(root: Path, include_legacy: bool = True) -> list[Run]:
+def discover(root: Path, include_logs: bool = True) -> list[Run]:
     runs: list[Run] = []
     covered: set[Path] = set()
 
@@ -112,7 +112,7 @@ def discover(root: Path, include_legacy: bool = True) -> list[Run]:
         runs.append(_from_metrics(metrics_path, root))
         covered.add(metrics_path.parent)
 
-    if include_legacy:
+    if include_logs:
         for log_path in root.rglob("train.log"):
             run_dir = log_path.parent.parent
             if run_dir in covered:
@@ -226,9 +226,9 @@ def main() -> None:
         help="每个 (model, scenario, cr) 只保留最新一次运行",
     )
     parser.add_argument(
-        "--no-legacy",
+        "--metrics-only",
         action="store_true",
-        help="不解析没有 metrics.json 的旧 train.log",
+        help="只读取 metrics.json，不解析只有 train.log 的运行",
     )
     parser.add_argument(
         "--min-epochs",
@@ -254,7 +254,7 @@ def main() -> None:
     if not root.is_dir():
         parser.error(f"实验目录不存在：{root}")
 
-    runs = discover(root, include_legacy=not args.no_legacy)
+    runs = discover(root, include_logs=not args.metrics_only)
     runs = filter_runs(runs, args.models, args.scenarios, args.cr)
     if args.min_epochs > 0:
         runs = [run for run in runs if (run.epochs or 0) >= args.min_epochs]

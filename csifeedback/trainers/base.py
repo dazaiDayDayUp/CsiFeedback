@@ -345,7 +345,7 @@ class BaseTrainer:
     def _maybe_save_best(self, val_loss: float) -> None:
         """按验证损失保存最优模型（``select_best=val_loss`` 时）。
 
-        CsiNet 会重写本方法以保持其原始行为。
+        CsiNet 会重写本方法以保持其 baseline 行为。
         """
         if self.training_config.select_best != "val_loss":
             return
@@ -362,7 +362,7 @@ class BaseTrainer:
         self._save_checkpoint("last.pth")
 
     def _save_metrics(self) -> None:
-        """把本次运行的配置、最优指标和评估历史写入 ``metrics.json``。"""
+        """把本次运行的配置、最优指标和评估记录写入 ``metrics.json``。"""
         if self.started_at is None:
             return
 

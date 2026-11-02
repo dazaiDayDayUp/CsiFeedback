@@ -25,7 +25,7 @@ dependencies = [
 dev = ["pytest>=7.0", "thop>=0.1.1"]
 
 [tool.setuptools.packages.find]
-exclude = ["tests", "scripts", "archive", "experiments"]
+exclude = ["tests", "scripts", "experiments"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

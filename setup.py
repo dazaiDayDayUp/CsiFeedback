@@ -12,7 +12,7 @@ setup(
     author="",
     author_email="",
     url="",
-    packages=find_packages(exclude=["tests", "scripts", "archive", "experiments"]),
+    packages=find_packages(exclude=["tests", "scripts", "experiments"]),
     python_requires=">=3.9",
     install_requires=[
         "torch>=2.0.0",

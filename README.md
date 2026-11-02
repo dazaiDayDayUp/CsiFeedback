@@ -1,10 +1,11 @@
 # CSI Feedback Research Platform
 
-面向 Massive MIMO CSI 反馈的研究平台与统一实验基座。
+面向 Massive MIMO CSI 反馈的研究平台，目标是产出新 SOTA 模型与论文级实验证据，
+支撑论文发表。
 
-项目已从“复现三个开源模型”转向**研究新模型**：以 CLNet、STNet、CsiNet 作为
-可复现的 baseline，在同一数据、同一指标、同一训练/评测流程下，持续集成新 idea，
-目标是提出该场景下的新 SOTA。
+本仓库以 CLNet、STNet、CsiNet 为 baseline，在 COST2100 indoor/outdoor 场景下，
+用统一的数据划分、指标实现、训练与评测流程开展公平对比。研究 idea 在独立分支上
+实现和验证，最终形成可复现的 SOTA 结果、消融实验与论文材料。
 
 ## 研究范围
 
@@ -23,11 +24,23 @@
 
 - **`main` 是稳定基座**：始终保持可训练、可评测、测试通过。
 - **每个 idea 一个 feature 分支**：从 `main` 签出 `idea/<name>`，互不干扰。
-- **baseline 只读**：CLNet / STNet / CsiNet 的网络结构和训练行为不再为了复现而改动；
-  如果确实必须改动，需要重跑全部 baseline 并更新基线结果。
+- **baseline 是公平对比的固定参照**：CLNet / STNet / CsiNet 的网络结构、训练行为和
+  评测协议保持稳定；如果确实必须改动，需要重跑全部 baseline 并更新基线表。
 - **idea 配置隔离**：新实验放在 `csifeedback/configs/ideas/<idea>/`，
   与 `baselines/` 分开。
 - **结果结构化**：每次运行自动写 `metrics.json`，可直接与 baseline 对比。
+
+## 研究产出
+
+每个 idea 的目标是形成论文级证据，而不只是跑通代码：
+
+- 与 baseline 在相同场景、相同 CR 矩阵下的公平 SOTA 对比
+- 至少 3 个随机种子的均值 ± 标准差
+- 关键模块与训练策略的消融实验
+- 参数量、FLOPs / 推理开销
+- 可复现的配置、提交、`metrics.json` 与检查点
+
+论文级实验清单见 [`docs/paper_checklist.md`](docs/paper_checklist.md)。
 
 ## 快速开始
 
@@ -147,9 +160,8 @@ python scripts/compare.py --latest --min-epochs 100
 │   ├── research_workflow.md     # idea 分支与实验规范
 │   ├── baselines.md             # baseline 协议与参考结果
 │   ├── architecture.md          # baseline 网络结构
-│   ├── migration.md             # 历史迁移记录
+│   ├── paper_checklist.md       # 论文级实验与写作清单
 │   └── ideas/TEMPLATE.md        # idea 记录模板
-├── archive/                     # 三个原始项目（只读历史参考）
 ├── AGENTS.md                    # 所有 coding agent 的统一协作说明
 └── README.md
 ```
@@ -249,7 +261,7 @@ training:
 | `test_nmse` | 只保存 test NMSE 最优 |
 | `val_loss` | 只保存验证损失最优（推荐新 idea 使用，避免测试集选模型） |
 
-无论选择哪种策略，`metrics.json` 都会记录完整的验证/测试历史。
+无论选择哪种策略，`metrics.json` 都会记录完整的验证/测试评估记录。
 
 ### 4. 测试与快速验证
 
@@ -278,7 +290,7 @@ experiments/{model}/{scenario}_cr{X}/{YYYYMMDD_HHMMSS}/
 └── metrics.json            # 结构化运行摘要
 ```
 
-`metrics.json` 包含配置、最优 rho/NMSE、评估历史、耗时、参数量和 git commit。
+`metrics.json` 包含配置、最优 rho/NMSE、评估记录、耗时、参数量和 git commit。
 `scripts/compare.py` 会优先读取它；对早期没有 `metrics.json` 的运行，会回退解析
 `train.log`。
 
@@ -324,13 +336,8 @@ export CUDA_VISIBLE_DEVICES=0
 - [`docs/research_workflow.md`](docs/research_workflow.md) —— idea 分支、实验与合并规范
 - [`docs/baselines.md`](docs/baselines.md) —— baseline 协议、参考结果与完整性规则
 - [`docs/architecture.md`](docs/architecture.md) —— 三个 baseline 的网络结构
-- [`docs/migration.md`](docs/migration.md) —— 从旧独立项目迁移的历史记录
+- [`docs/paper_checklist.md`](docs/paper_checklist.md) —— 论文级实验与写作清单
 - [`AGENTS.md`](AGENTS.md) —— coding agent 协作说明
-
-## 历史与归档
-
-`archive/` 保留三个原始开源项目（CLNet / STNet / CsiNet）的源码与 README，
-仅作历史参考，不再维护。当前 baseline 已统一到 `csifeedback/` 包中。
 
 ## 引用
 

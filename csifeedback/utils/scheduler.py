@@ -42,7 +42,7 @@ class WarmUpCosineAnnealingLR(_LRScheduler):
 
     def get_lr(self) -> List[float]:
         if self.last_epoch < self.T_warmup:
-            # warmup 阶段：学习率从 0 线性增长到初始学习率，与原始 CLNet 实现一致。
+            # warmup 阶段：学习率从 0 线性增长到初始学习率，与 CLNet baseline 协议一致。
             alpha = self.last_epoch / max(1, self.T_warmup)
             return [base_lr * alpha for base_lr in self.base_lrs]
         else:

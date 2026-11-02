@@ -19,11 +19,7 @@ from csifeedback.models.registry import (
     register_model,
 )
 
-# baseline 模型：导入即注册。
-from csifeedback.models import clnet as _clnet  # noqa: F401
-from csifeedback.models import csinet as _csinet  # noqa: F401
-from csifeedback.models import stnet as _stnet  # noqa: F401
-
+# baseline 模型：导入模块即完成注册。
 from csifeedback.models.clnet import CLNet, create_clnet
 from csifeedback.models.csinet import CsiNet, create_csinet
 from csifeedback.models.stnet import STNet, create_stnet
