@@ -8,7 +8,11 @@ from torch.optim import Adam
 from csifeedback.models.base import CSIAutoencoder
 from csifeedback.trainers.base import BaseTrainer
 from csifeedback.utils.config import ExperimentConfig
-from csifeedback.utils.scheduler import FakeLR, WarmUpCosineAnnealingLR
+from csifeedback.utils.scheduler import (
+    FakeLR,
+    WarmUpCosineAnnealingLR,
+    configure_warmup_cosine,
+)
 
 
 __all__ = ["CLNetTrainer"]
@@ -49,19 +53,20 @@ class CLNetTrainer(BaseTrainer):
 
         super().__init__(config, model, device, optimizer, scheduler)
 
-    def fit(self, train_loader, val_loader=None, test_loader=None):
-        if self._lazy_scheduler and isinstance(self.scheduler, WarmUpCosineAnnealingLR):
-            steps_per_epoch = len(train_loader)
-            total_epochs = self.training_config.epochs
-            T_max = self.config.scheduler.T_max or (total_epochs * steps_per_epoch)
-            T_warmup = self.config.scheduler.T_warmup or (30 * steps_per_epoch)
-            # warmup 步数不能超过总调度步数。
-            T_warmup = min(T_warmup, max(0, T_max - 1))
-            self.scheduler.T_max = T_max
-            self.scheduler.T_warmup = T_warmup
-            self.logger.info(
-                "CLNet cosine 调度器：T_max=%d 步，T_warmup=%d 步",
-                T_max,
-                T_warmup,
-            )
-        return super().fit(train_loader, val_loader, test_loader)
+    def _prepare_scheduler(self, train_loader) -> None:
+        if not self._lazy_scheduler or not isinstance(
+            self.scheduler, WarmUpCosineAnnealingLR
+        ):
+            return
+        T_max, T_warmup = configure_warmup_cosine(
+            self.scheduler,
+            total_epochs=self.training_config.epochs,
+            steps_per_epoch=len(train_loader),
+            T_max=self.config.scheduler.T_max,
+            T_warmup=self.config.scheduler.T_warmup,
+        )
+        self.logger.info(
+            "CLNet cosine 调度器：T_max=%d 步，T_warmup=%d 步",
+            T_max,
+            T_warmup,
+        )

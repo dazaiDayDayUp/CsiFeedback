@@ -1,6 +1,10 @@
-# 模型架构说明
+# Baseline 模型架构
 
-本文档详细说明 `csifeedback` 包中三个 Massive MIMO CSI 反馈自编码器的网络结构、数据流，以及与原始论文/脚本的对应关系。
+本文档详细说明三个 baseline（CLNet、STNet、CsiNet）的网络结构、数据流，以及与原始论文/脚本的对应关系。
+
+> 这三个模型现在是研究新模型的参照 baseline，不再是项目的最终交付物。
+> 除非修复明确的实现错误，否则不要修改它们的网络结构或训练行为。
+> 新模型的接入方式见 [`research_workflow.md`](research_workflow.md)。
 
 ## 目录
 
@@ -217,7 +221,7 @@ CsiNet 使用单个 Adam 优化器，并按照验证损失保存最优模型（`
 | STNet | 双 Adam（enc/dec 分离），betas=(0.5, 0.999) | const | test rho / test NMSE |
 | CsiNet | 单 Adam，betas=(0.9, 0.999) | const | val loss |
 
-统一入口 `scripts/train.py` 会根据 `model.name` 自动选择对应 trainer；配置中的 `optimizer.betas`、`separate_enc_dec`、`scheduler.name` 需要与模型匹配，具体可参考 `csifeedback/configs/` 下的示例 YAML。
+统一入口 `scripts/train.py` 会根据 `model.name` 自动选择对应 trainer；配置中的 `optimizer.betas`、`separate_enc_dec`、`scheduler.name` 需要与模型匹配，具体可参考 `csifeedback/configs/baselines/` 下的示例 YAML。
 
 CLNet 的 cosine warmup 实现与原始代码一致：warmup 阶段学习率从 0 线性增长到初始 lr，之后进入余弦退火到 `eta_min`。
 
@@ -234,3 +238,19 @@ CLNet 的 cosine warmup 实现与原始代码一致：warmup 阶段学习率从 
 | 1/64 | 64 | 32  | 32  |
 
 输入 CSI 特征图总维度为 `2 × 32 × 32 = 2048`，因此瓶颈维度与压缩比直接对应。
+
+---
+
+## 扩展接口
+
+新模型通过 `csifeedback/models/registry.py` 的 `@register_model` 注册，不需要修改
+已有模型文件。所有模型共享：
+
+- `CSIAutoencoder`：要求实现 `encoded_dim`、`get_encoder_state()`、
+  `get_decoder_state()` 和 `forward(x)`；
+- 统一的 `forward` 输入输出形状 `(N, 2, 32, 32)`；
+- 统一的数据加载与 NMSE/rho 指标。
+
+如果新模型只需要标准 MSE + 单优化器，`DefaultTrainer` 会根据 YAML 自动构建
+Adam / AdamW / SGD 和 const / cosine 调度器，无需新增 trainer。详细步骤见
+[`research_workflow.md`](research_workflow.md)。

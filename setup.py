@@ -4,8 +4,11 @@ from setuptools import find_packages, setup
 
 setup(
     name="csifeedback",
-    version="0.1.0",
-    description="Unified PyTorch implementations of CLNet, STNet, and CsiNet for Massive MIMO CSI feedback",
+    version="0.2.0",
+    description=(
+        "Research platform for deep-learning-based Massive MIMO CSI feedback, "
+        "with CLNet, STNet, and CsiNet baselines"
+    ),
     author="",
     author_email="",
     url="",

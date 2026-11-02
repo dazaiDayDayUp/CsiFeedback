@@ -2,6 +2,7 @@
 
 import os
 import time
+from datetime import datetime
 from typing import Any, Dict, Optional, Tuple
 
 import torch
@@ -16,8 +17,9 @@ init(autoreset=True)
 from csifeedback.metrics.csi_metrics import compute_nmse, compute_rho
 from csifeedback.models.base import CSIAutoencoder
 from csifeedback.utils.checkpoint import load_checkpoint, save_checkpoint
-from csifeedback.utils.config import ExperimentConfig, TrainingConfig
+from csifeedback.utils.config import ExperimentConfig, TrainingConfig, config_to_dict
 from csifeedback.utils.logging import get_logger
+from csifeedback.utils.results import git_commit, write_metrics
 
 
 __all__ = ["BaseTrainer"]
@@ -49,13 +51,20 @@ class BaseTrainer:
         self.best_nmse = float("inf")
         self.best_val_loss = float("inf")
 
+        # 运行摘要：用于 metrics.json 与实验对比。
+        self.started_at: Optional[str] = None
+        self.train_started_at: Optional[float] = None
+        self.completed_epochs = 0
+        self.history: list[Dict[str, Any]] = []
+        self.last_train_loss: Optional[float] = None
+        self.last_val: Optional[Dict[str, Any]] = None
+        self.last_test: Optional[Dict[str, Any]] = None
+
         self.exp_dir = self._make_exp_dir()
         self._setup_logging()
 
     def _make_exp_dir(self) -> str:
         """创建带场景、压缩比和时间戳的实验目录。"""
-        from datetime import datetime
-
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         model_name = self.config.model.name
         scenario = self.config.data.scenario
@@ -73,21 +82,19 @@ class BaseTrainer:
         return exp_dir
 
     def _cr_label(self) -> str:
-        """根据模型配置返回压缩比标签，例如 cr4、cr8。"""
-        model_name = self.config.model.name
-        if model_name == "clnet":
-            reduction = self.config.model.reduction
-            if reduction is None:
-                raise ValueError("CLNet 配置缺少 model.reduction")
-            return f"cr{reduction}"
-        elif model_name in {"stnet", "csinet"}:
-            encoded_dim = self.config.model.encoded_dim
-            if encoded_dim is None:
-                raise ValueError(f"{model_name} 配置缺少 model.encoded_dim")
-            reduction = 2048 // encoded_dim
-            return f"cr{reduction}"
-        else:
-            return "unknown_cr"
+        """根据模型配置返回压缩比标签，例如 cr4、cr8。
+
+        新模型只要使用标准的 ``model.reduction`` 或 ``model.encoded_dim``
+        字段，就能自动获得正确的实验目录和 ``metrics.json`` 标签。
+        """
+        if self.config.model.reduction is not None:
+            return f"cr{self.config.model.reduction}"
+
+        encoded_dim = self.config.model.encoded_dim
+        if encoded_dim:
+            return f"cr{2048 // int(encoded_dim)}"
+
+        return "unknown_cr"
 
     @staticmethod
     def _format_time(seconds: float) -> str:
@@ -101,6 +108,10 @@ class BaseTrainer:
         from csifeedback.utils.logging import setup_logging
         log_file = os.path.join(self.exp_dir, "logs", "train.log")
         setup_logging(log_file=log_file)
+
+    def _prepare_scheduler(self, train_loader: DataLoader) -> None:
+        """钩子：训练开始前根据 dataloader 长度配置调度器。"""
+        pass
 
     def fit(
         self,
@@ -121,56 +132,82 @@ class BaseTrainer:
             self.device,
         )
 
-        train_start_time = time.time()
+        self._prepare_scheduler(train_loader)
+        self.started_at = datetime.now().isoformat(timespec="seconds")
+        self.train_started_at = time.time()
+        self.completed_epochs = start_epoch
+        train_start_time = self.train_started_at
 
-        for epoch in range(start_epoch, epochs):
-            self.epoch = epoch
-            epoch_start_time = time.time()
-            train_loss = self._train_epoch(train_loader)
-            epoch_duration = time.time() - epoch_start_time
-            total_elapsed = time.time() - train_start_time
-            completed_epochs = epoch - start_epoch + 1
-            remaining_epochs = epochs - epoch - 1
-            avg_epoch_time = total_elapsed / max(1, completed_epochs)
-            eta = avg_epoch_time * remaining_epochs
+        try:
+            for epoch in range(start_epoch, epochs):
+                self.epoch = epoch
+                epoch_start_time = time.time()
+                train_loss = self._train_epoch(train_loader)
+                self.last_train_loss = train_loss
+                epoch_duration = time.time() - epoch_start_time
+                total_elapsed = time.time() - train_start_time
+                completed_epochs = epoch - start_epoch + 1
+                remaining_epochs = epochs - epoch - 1
+                avg_epoch_time = total_elapsed / max(1, completed_epochs)
+                eta = avg_epoch_time * remaining_epochs
 
-            self.logger.info(
-                "Epoch [%d/%d] train_loss: %.4e  本轮 %s  累计 %s  预计剩余 %s",
-                epoch + 1,
-                epochs,
-                train_loss,
-                self._format_time(epoch_duration),
-                self._format_time(total_elapsed),
-                self._format_time(eta),
-            )
-
-            if val_loader is not None and self._is_val_epoch(epoch):
-                val_loss, val_nmse = self._validate(val_loader)
                 self.logger.info(
-                    "Epoch [%d/%d] val_loss: %.4e  val_NMSE: %.4f dB",
+                    "Epoch [%d/%d] train_loss: %.4e  本轮 %s  累计 %s  预计剩余 %s",
                     epoch + 1,
                     epochs,
-                    val_loss,
-                    val_nmse,
+                    train_loss,
+                    self._format_time(epoch_duration),
+                    self._format_time(total_elapsed),
+                    self._format_time(eta),
                 )
-                self._maybe_save_best(val_loss)
 
-            if test_loader is not None and self._is_test_epoch(epoch):
-                test_loss, rho, nmse = self._test(test_loader)
-                self.logger.info(
-                    "Epoch [%d/%d] test_loss: %.4e  rho: %.4f  NMSE: %.4f dB",
-                    epoch + 1,
-                    epochs,
-                    test_loss,
-                    rho,
-                    nmse,
-                )
-                self._maybe_update_best_metrics(rho, nmse)
+                if val_loader is not None and self._is_val_epoch(epoch):
+                    val_loss, val_nmse = self._validate(val_loader)
+                    self.logger.info(
+                        "Epoch [%d/%d] val_loss: %.4e  val_NMSE: %.4f dB",
+                        epoch + 1,
+                        epochs,
+                        val_loss,
+                        val_nmse,
+                    )
+                    self.last_val = {
+                        "epoch": epoch + 1,
+                        "loss": val_loss,
+                        "nmse": val_nmse,
+                    }
+                    self.history.append({"kind": "val", **self.last_val})
+                    self._maybe_save_best(val_loss)
 
-            self._save_periodic_checkpoint(epoch)
+                if test_loader is not None and self._is_test_epoch(epoch):
+                    test_loss, rho, nmse = self._test(test_loader)
+                    self.logger.info(
+                        "Epoch [%d/%d] test_loss: %.4e  rho: %.4f  NMSE: %.4f dB",
+                        epoch + 1,
+                        epochs,
+                        test_loss,
+                        rho,
+                        nmse,
+                    )
+                    self.last_test = {
+                        "epoch": epoch + 1,
+                        "loss": test_loss,
+                        "rho": rho,
+                        "nmse": nmse,
+                    }
+                    self.history.append({"kind": "test", **self.last_test})
+                    self._maybe_update_best_metrics(rho, nmse)
 
-        self._save_last_checkpoint()
-        self.logger.info("训练结束。实验目录：%s", self.exp_dir)
+                self._save_periodic_checkpoint(epoch)
+                self.completed_epochs = epoch + 1
+
+            self._save_last_checkpoint()
+            self.logger.info("训练结束。实验目录：%s", self.exp_dir)
+        except KeyboardInterrupt:
+            self.logger.warning("训练被中断，保存当前检查点与 metrics.json")
+            self._save_last_checkpoint()
+            raise
+        finally:
+            self._save_metrics()
 
     def _get_current_lr(self) -> float:
         """返回当前学习率。子类（如 STNet）可针对多个优化器重写。"""
@@ -295,16 +332,26 @@ class BaseTrainer:
         return freq > 0 and (epoch + 1) % freq == 0
 
     def _maybe_update_best_metrics(self, rho: float, nmse: float) -> None:
+        select_best = self.training_config.select_best
         if rho > self.best_rho:
             self.best_rho = rho
-            self._save_checkpoint("best_rho.pth")
+            if select_best in {"all", "test_rho"}:
+                self._save_checkpoint("best_rho.pth")
         if nmse < self.best_nmse:
             self.best_nmse = nmse
-            self._save_checkpoint("best_nmse.pth")
+            if select_best in {"all", "test_nmse"}:
+                self._save_checkpoint("best_nmse.pth")
 
     def _maybe_save_best(self, val_loss: float) -> None:
-        """钩子，供模型特定的最优保存逻辑使用（例如 CsiNet）。"""
-        pass
+        """按验证损失保存最优模型（``select_best=val_loss`` 时）。
+
+        CsiNet 会重写本方法以保持其原始行为。
+        """
+        if self.training_config.select_best != "val_loss":
+            return
+        if val_loss < self.best_val_loss:
+            self.best_val_loss = val_loss
+            self._save_checkpoint("best_val.pth")
 
     def _save_periodic_checkpoint(self, epoch: int) -> None:
         freq = self.training_config.checkpoint_freq
@@ -313,6 +360,48 @@ class BaseTrainer:
 
     def _save_last_checkpoint(self) -> None:
         self._save_checkpoint("last.pth")
+
+    def _save_metrics(self) -> None:
+        """把本次运行的配置、最优指标和评估历史写入 ``metrics.json``。"""
+        if self.started_at is None:
+            return
+
+        duration = None
+        if self.train_started_at is not None:
+            duration = round(time.time() - self.train_started_at, 1)
+
+        payload = {
+            "schema_version": 1,
+            "model": self.config.model.name,
+            "model_class": self.model.__class__.__name__,
+            "scenario": self.config.data.scenario,
+            "compression_ratio": self._cr_label(),
+            "exp_dir": os.path.abspath(self.exp_dir),
+            "started_at": self.started_at,
+            "finished_at": datetime.now().isoformat(timespec="seconds"),
+            "duration_seconds": duration,
+            "epochs_completed": self.completed_epochs,
+            "model_parameters": sum(p.numel() for p in self.model.parameters()),
+            "git_commit": git_commit(),
+            "config": config_to_dict(self.config),
+            "best": {
+                "rho": self.best_rho,
+                "nmse": self.best_nmse,
+                "val_loss": self.best_val_loss,
+            },
+            "last": {
+                "train_loss": self.last_train_loss,
+                "val": self.last_val,
+                "test": self.last_test,
+            },
+            "history": self.history,
+        }
+
+        try:
+            path = write_metrics(self.exp_dir, payload)
+            self.logger.info("运行摘要已写入 %s", path)
+        except Exception:
+            self.logger.exception("写入 metrics.json 失败")
 
     def _save_checkpoint(self, filename: str) -> None:
         path = os.path.join(self.exp_dir, "checkpoints", filename)

@@ -10,19 +10,25 @@ import time
 from pathlib import Path
 
 
-def _cr_sort_key(path: Path) -> tuple[int | float, str]:
-    """按文件名中的压缩比 crX 数字升序排序；无法解析时按文件名排序。"""
+def _cr_sort_key(path: Path) -> tuple[int | float, str, str]:
+    """按文件名中的压缩比 crX 数字升序排序；无法解析时按路径排序。"""
     match = re.search(r"cr(\d+)", path.name, flags=re.IGNORECASE)
     cr = int(match.group(1)) if match else float("inf")
-    return (cr, path.name)
+    return (cr, path.parent.name, path.name)
 
 
 def find_configs(config_dir: Path, pattern: str) -> list[Path]:
-    """根据通配符模式返回匹配的配置文件列表，按压缩比升序、再按文件名排序。"""
-    return sorted(
-        (p for p in config_dir.glob("*.yaml") if fnmatch.fnmatch(p.name, pattern)),
-        key=_cr_sort_key,
-    )
+    """递归查找 YAML 配置。
+
+    ``pattern`` 同时匹配相对路径（如 ``baselines/clnet_*.yaml``）和文件名
+    （如 ``clnet_*.yaml``），便于按目录或模型筛选。
+    """
+    matches = []
+    for path in config_dir.rglob("*.yaml"):
+        relative = path.relative_to(config_dir).as_posix()
+        if fnmatch.fnmatch(relative, pattern) or fnmatch.fnmatch(path.name, pattern):
+            matches.append(path)
+    return sorted(matches, key=_cr_sort_key)
 
 
 def format_duration(seconds: float) -> str:
@@ -37,7 +43,7 @@ def main():
     parser.add_argument(
         "--pattern", "-p",
         default="*.yaml",
-        help="配置文件匹配模式（例如 clnet_*.yaml），默认 *.yaml",
+        help="配置文件匹配模式（例如 clnet_*.yaml 或 baselines/*.yaml），默认 *.yaml",
     )
     args = parser.parse_args()
 

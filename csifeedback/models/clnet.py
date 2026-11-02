@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from csifeedback.models.base import CSIAutoencoder
+from csifeedback.models.registry import register_model
 
 
 __all__ = ["CLNet", "create_clnet"]
@@ -221,6 +222,7 @@ class CLNet(CSIAutoencoder):
         return out
 
 
+@register_model("clnet")
 def create_clnet(reduction: int = 4) -> CLNet:
     """CLNet 工厂函数。
 

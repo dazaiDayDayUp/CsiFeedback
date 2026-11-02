@@ -15,6 +15,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from csifeedback.models.base import CSIAutoencoder
+from csifeedback.models.registry import register_model
 
 
 __all__ = ["STNet", "create_stnet"]
@@ -309,6 +310,7 @@ class STNet(CSIAutoencoder):
         return out
 
 
+@register_model("stnet")
 def create_stnet(encoded_dim: int = 512) -> STNet:
     """STNet 工厂函数。
 

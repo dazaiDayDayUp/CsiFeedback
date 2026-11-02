@@ -1,16 +1,19 @@
-# 迁移指南
+# 历史迁移记录
 
-本文档帮助原独立脚本的用户迁移到统一的 `csifeedback` 包。
+本文档记录最初把三个独立项目（CLNet / STNet / CsiNet）合并为统一
+`csifeedback` 包时的迁移过程，仅供历史回溯。
 
-> 快速参考：压缩比速查表见 [`README.md`](../README.md)，模型参数与架构细节见 [`architecture.md`](architecture.md)。
+> 项目当前定位已转为“baseline 基座 + 新模型研究”，日常实验请参考
+> [`research_workflow.md`](research_workflow.md)，baseline 协议见
+> [`baselines.md`](baselines.md)，模型结构见 [`architecture.md`](architecture.md)。
 
 ## 前后对比
 
 | 任务 | 旧方式 | 新方式 |
 |------|--------|--------|
-| 训练 CLNet | `cd CLNet && python main.py --data-dir ../data ...` | `python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml` |
-| 训练 STNet | `cd STNet && python stnet_fixed.py` | `python scripts/train.py --config csifeedback/configs/stnet_indoor_cr4.yaml` |
-| 训练 CsiNet | `cd CsiNet && python csinet_pytorch.py` | `python scripts/train.py --config csifeedback/configs/csinet_indoor_cr4.yaml` |
+| 训练 CLNet | `cd CLNet && python main.py --data-dir ../data ...` | `python scripts/train.py --config csifeedback/configs/baselines/clnet_indoor_cr4.yaml` |
+| 训练 STNet | `cd STNet && python stnet_fixed.py` | `python scripts/train.py --config csifeedback/configs/baselines/stnet_indoor_cr4.yaml` |
+| 训练 CsiNet | `cd CsiNet && python csinet_pytorch.py` | `python scripts/train.py --config csifeedback/configs/baselines/csinet_indoor_cr4.yaml` |
 | 评估 | 各模型专用脚本 | `python scripts/evaluate.py --config ... --checkpoint ...` |
 
 ## 配置覆盖
@@ -19,7 +22,7 @@
 
 ```bash
 python scripts/train.py \
-    --config csifeedback/configs/clnet_indoor_cr4.yaml \
+    --config csifeedback/configs/baselines/clnet_indoor_cr4.yaml \
     -o training.epochs=50 data.batch_size=200
 ```
 
@@ -38,7 +41,7 @@ python scripts/train.py \
 
 ```bash
 python scripts/evaluate.py \
-    --config csifeedback/configs/clnet_indoor_cr4.yaml \
+    --config csifeedback/configs/baselines/clnet_indoor_cr4.yaml \
     --checkpoint experiments/clnet/indoor_cr4/YYYYMMDD_HHMMSS/checkpoints/last.pth \
     --split test
 ```
@@ -61,17 +64,17 @@ python scripts/evaluate.py \
 
 ## 添加新模型
 
-本包遵循开闭原则。添加新模型时，**不需要修改任何已有模型代码**，只需在扩展点注册：
+迁移完成后的扩展方式已经演进，当前流程见
+[`research_workflow.md`](research_workflow.md)。核心变化：
 
-1. 在 `csifeedback/models/<new_model>.py` 中实现新网络，继承 `CSIAutoencoder`。
-2. 在 `csifeedback/models/__init__.py` 中注册工厂函数。
-3. 在 `csifeedback/trainers/<new_model>.py` 中实现训练器（或复用 `BaseTrainer`）。
-4. 在 `csifeedback/trainers/__init__.py` 中注册训练器。
-5. 在 `csifeedback/configs/` 下添加 YAML 配置。
+1. 在 `csifeedback/models/<new_model>.py` 中实现网络，继承 `CSIAutoencoder`，
+   并用 `@register_model("<new_model>")` 注册工厂函数。
+2. 在 `csifeedback/models/__init__.py` 中导入该模块。
+3. 标准 MSE + 单优化器的新模型无需编写 trainer，会自动使用 `DefaultTrainer`；
+   只有特殊训练逻辑才需要新增专用 trainer。
+4. 在 `csifeedback/configs/ideas/<new_model>/` 下添加 YAML 配置。
 
-### 自定义模型参数
-
-`ModelConfig` 已通过 `model.extra` 字段支持任意附加参数。例如新模型需要 `depth` 和 `num_heads`：
+`ModelConfig.extra` 仍支持任意附加参数，例如：
 
 ```yaml
 model:
@@ -82,6 +85,4 @@ model:
     num_heads: 8
 ```
 
-工厂函数会收到 `encoded_dim=256, depth=2, num_heads=8`。原有 CLNet / STNet / CsiNet 不需要 `extra`。
-
-无需修改任何已有模型代码。
+工厂函数会收到 `encoded_dim=256, depth=2, num_heads=8`。

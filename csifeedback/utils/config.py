@@ -45,10 +45,11 @@ class DataConfig:
 
 @dataclass
 class OptimizerConfig:
-    name: str = "adam"
+    name: str = "adam"  # adam / adamw / sgd
     lr: float = 1e-3
     betas: Tuple[float, float] = (0.9, 0.999)
     weight_decay: float = 0.0
+    momentum: float = 0.9  # 仅 SGD 使用
     separate_enc_dec: bool = False  # STNet 需要分别优化 encoder/decoder
 
     def __post_init__(self) -> None:
@@ -75,6 +76,16 @@ class TrainingConfig:
     checkpoint_dir: str = "./experiments"
     checkpoint_freq: int = 50  # 每 N 个 epoch 保存一次完整检查点，0 表示关闭
     resume: Optional[str] = None
+    # 最优 checkpoint 的选择依据：all / test_rho / test_nmse / val_loss
+    select_best: str = "all"
+
+    def __post_init__(self) -> None:
+        allowed = {"all", "test_rho", "test_nmse", "val_loss"}
+        if self.select_best not in allowed:
+            raise ValueError(
+                f"training.select_best 必须是 {sorted(allowed)} 之一，"
+                f"得到 {self.select_best!r}"
+            )
 
 
 @dataclass

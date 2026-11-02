@@ -7,7 +7,7 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
 
-__all__ = ["FakeLR", "WarmUpCosineAnnealingLR"]
+__all__ = ["FakeLR", "WarmUpCosineAnnealingLR", "configure_warmup_cosine"]
 
 
 class FakeLR(_LRScheduler):
@@ -57,3 +57,27 @@ class WarmUpCosineAnnealingLR(_LRScheduler):
                 / 2
                 for base_lr in self.base_lrs
             ]
+
+
+def configure_warmup_cosine(
+    scheduler: WarmUpCosineAnnealingLR,
+    total_epochs: int,
+    steps_per_epoch: int,
+    T_max: int | None = None,
+    T_warmup: int | None = None,
+) -> tuple[int, int]:
+    """根据 epoch 数与 dataloader 长度计算 cosine 调度的总步数和 warmup 步数。
+
+    ``T_max`` / ``T_warmup`` 为 ``None`` 时分别取“全部训练步数”和“30 个 epoch”。
+    warmup 步数会被裁剪到不超过总步数减一。
+    """
+    resolved_T_max = T_max or (total_epochs * steps_per_epoch)
+    resolved_T_warmup = T_warmup or (30 * steps_per_epoch)
+
+    if resolved_T_max < 1:
+        raise ValueError("cosine 调度的总步数必须大于 0")
+    resolved_T_warmup = min(resolved_T_warmup, max(0, resolved_T_max - 1))
+
+    scheduler.T_max = resolved_T_max
+    scheduler.T_warmup = resolved_T_warmup
+    return resolved_T_max, resolved_T_warmup

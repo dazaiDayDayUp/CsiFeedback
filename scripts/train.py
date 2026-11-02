@@ -22,7 +22,7 @@ def main():
     parser.add_argument(
         "--config", "-c",
         required=True,
-        help="YAML 配置文件路径（例如 csifeedback/configs/clnet_indoor_cr4.yaml）",
+        help="YAML 配置文件路径（例如 csifeedback/configs/baselines/clnet_indoor_cr4.yaml）",
     )
     parser.add_argument(
         "--override", "-o",

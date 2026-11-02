@@ -37,6 +37,8 @@ class CsiNetTrainer(BaseTrainer):
         super().__init__(config, model, device, optimizer, scheduler)
 
     def _maybe_save_best(self, val_loss: float) -> None:
+        if self.training_config.select_best not in {"all", "val_loss"}:
+            return
         if val_loss < self.best_val_loss:
             self.best_val_loss = val_loss
             self._save_checkpoint("best_val.pth")

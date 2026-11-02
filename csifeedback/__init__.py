@@ -1,3 +1,7 @@
-"""CSI Feedback: unified PyTorch implementations of CLNet, STNet, and CsiNet."""
+"""CSI Feedback: a research platform for Massive MIMO CSI feedback.
 
-__version__ = "0.1.0"
+CLNet, STNet, and CsiNet are maintained as reproducible baselines; new research
+models extend the shared data, metrics, training, and evaluation pipeline.
+"""
+
+__version__ = "0.2.0"

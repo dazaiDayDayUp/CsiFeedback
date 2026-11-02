@@ -1,4 +1,4 @@
-# CSI Feedback reproduction environment
+# CSI Feedback research environment
 # Python 3.12
 
 # PyTorch (install CPU or GPU wheel according to your platform)

@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "csifeedback"
-version = "0.1.0"
-description = "Unified PyTorch implementations of CLNet, STNet, and CsiNet for Massive MIMO CSI feedback"
+version = "0.2.0"
+description = "Research platform for deep-learning-based Massive MIMO CSI feedback, with CLNet, STNet, and CsiNet baselines"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
-keywords = ["massive mimo", "csi feedback", "deep learning", "pytorch"]
+keywords = ["massive mimo", "csi feedback", "deep learning", "pytorch", "research", "baseline"]
 dependencies = [
     "torch>=2.0.0",
     "numpy<2.0",

@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from csifeedback.models.base import CSIAutoencoder
+from csifeedback.models.registry import register_model
 
 
 __all__ = ["CsiNet", "create_csinet"]
@@ -89,6 +90,7 @@ class CsiNet(CSIAutoencoder):
         return out
 
 
+@register_model("csinet")
 def create_csinet(encoded_dim: int = 512) -> CsiNet:
     """CsiNet 工厂函数。
 

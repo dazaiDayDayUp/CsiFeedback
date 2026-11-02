@@ -40,6 +40,12 @@ Thumbs.db
 *.out
 logs/
 
+# Experiment tracking
+wandb/
+runs/
+lightning_logs/
+tensorboard/
+
 # Jupyter
 .ipynb_checkpoints/
 

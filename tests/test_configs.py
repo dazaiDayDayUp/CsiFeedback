@@ -18,10 +18,14 @@ from csifeedback.utils.config import load_config
 
 
 CONFIG_DIR = repo_root / "csifeedback" / "configs"
-CONFIG_PATHS = sorted(CONFIG_DIR.glob("*.yaml"))
+CONFIG_PATHS = sorted(CONFIG_DIR.rglob("*.yaml"))
 
 
-@pytest.mark.parametrize("config_path", CONFIG_PATHS, ids=[p.name for p in CONFIG_PATHS])
+@pytest.mark.parametrize(
+    "config_path",
+    CONFIG_PATHS,
+    ids=[str(p.relative_to(CONFIG_DIR)) for p in CONFIG_PATHS],
+)
 def test_config_loads_and_model_forward(config_path):
     """每个 YAML 配置都应能加载并驱动对应模型完成一次前向传播。"""
     config = load_config(str(config_path))

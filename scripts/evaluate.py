@@ -2,6 +2,8 @@
 """所有 CSI 反馈模型的统一评估入口。"""
 
 import argparse
+import json
+import os
 import sys
 from pathlib import Path
 
@@ -16,6 +18,7 @@ from csifeedback.models import get_model_from_config
 from csifeedback.utils.checkpoint import load_checkpoint
 from csifeedback.utils.config import load_config
 from csifeedback.utils.device import setup_device
+from csifeedback.utils.results import json_safe
 
 
 def main():
@@ -27,6 +30,12 @@ def main():
         default="test",
         choices=["train", "val", "test"],
         help="要评估的数据集划分",
+    )
+    parser.add_argument(
+        "--output",
+        "-o",
+        default=None,
+        help="可选：把评估指标写入 JSON 文件",
     )
     args = parser.parse_args()
 
@@ -83,10 +92,27 @@ def main():
         rho = float("nan")
 
     avg_loss = total_loss / max(1, n_batches)
+    result = {
+        "split": args.split,
+        "loss": avg_loss,
+        "nmse_db": nmse,
+        "rho": rho,
+        "config": args.config,
+        "checkpoint": args.checkpoint,
+    }
+
     print(f"Split: {args.split}")
     print(f"Loss:  {avg_loss:.4e}")
     print(f"NMSE:  {nmse:.4f} dB")
     print(f"Rho:   {rho:.6f}")
+
+    if args.output:
+        output_path = os.path.abspath(args.output)
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as handle:
+            json.dump(json_safe(result), handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+        print(f"指标已写入：{output_path}")
 
 
 if __name__ == "__main__":

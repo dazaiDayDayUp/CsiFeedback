@@ -1,123 +1,297 @@
-# CSI Feedback
+# CSI Feedback Research Platform
 
-三个基于深度学习的 Massive MIMO CSI 反馈模型的统一 PyTorch 复现：
+面向 Massive MIMO CSI 反馈的研究平台与统一实验基座。
 
-- **CLNet** —— 论文 *Complex Input Lightweight Neural Network designed for Massive MIMO CSI Feedback*（Ji & Li，IEEE WCL 2021）
-- **STNet** —— 论文 *A Spatially Separable Attention Mechanism For Massive MIMO CSI Feedback*（Mourya & Amuru，arXiv 2022）
-- **CsiNet** —— 论文 *Deep Learning for Massive MIMO CSI Feedback*（Wen 等人，IEEE WCL 2018）
+项目已从“复现三个开源模型”转向**研究新模型**：以 CLNet、STNet、CsiNet 作为
+可复现的 baseline，在同一数据、同一指标、同一训练/评测流程下，持续集成新 idea，
+目标是提出该场景下的新 SOTA。
 
-本仓库将原先三个独立下载的 GitHub 项目整理为单一、配置驱动、符合开闭原则的统一包。
+## 研究范围
+
+| 项目 | 设定 |
+|------|------|
+| 任务 | Massive MIMO 下行 CSI 反馈（自编码器压缩与重建） |
+| 数据集 | COST2100（indoor / outdoor） |
+| 输入 | 稀疏 CSI，`(N, 2, 32, 32)`（实部/虚部，已归一化到 `[0, 1]`） |
+| 压缩比 | 1/4、1/8、1/16、1/32、1/64 |
+| 指标 | NMSE（dB，越低越好）、rho（余弦相似度，越高越好） |
+| 评测划分 | COST2100 官方 train / val / test |
+
+所有模型共享同一套数据加载器、指标实现和训练循环，保证 baseline 与新 idea 的对比公平。
+
+## 项目定位
+
+- **`main` 是稳定基座**：始终保持可训练、可评测、测试通过。
+- **每个 idea 一个 feature 分支**：从 `main` 签出 `idea/<name>`，互不干扰。
+- **baseline 只读**：CLNet / STNet / CsiNet 的网络结构和训练行为不再为了复现而改动；
+  如果确实必须改动，需要重跑全部 baseline 并更新基线结果。
+- **idea 配置隔离**：新实验放在 `csifeedback/configs/ideas/<idea>/`，
+  与 `baselines/` 分开。
+- **结果结构化**：每次运行自动写 `metrics.json`，可直接与 baseline 对比。
 
 ## 快速开始
 
 ```bash
-# 激活 miniforge 环境
+# 激活环境
 conda activate csifeedback
 
-# 安装依赖（首次使用）
+# 安装依赖（首次）
 pip install -r requirements.txt
-```
 
-> ⚠️ **注意**：训练前请通过 `CUDA_VISIBLE_DEVICES` 指定 GPU，否则可能因 CUDA 初始化失败而报错。
+# 训练一个 baseline（必须通过 CUDA_VISIBLE_DEVICES 指定 GPU）
+CUDA_VISIBLE_DEVICES=0 python scripts/train.py \
+    --config csifeedback/configs/baselines/clnet_indoor_cr4.yaml
 
-```bash
-# 训练 CLNet indoor CR=1/4（指定 GPU 0）
-CUDA_VISIBLE_DEVICES=0 python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml
-
-# 根据服务器负载覆盖 batch size 等任意配置项
-CUDA_VISIBLE_DEVICES=0 python scripts/train.py --config csifeedback/configs/clnet_indoor_cr4.yaml \
-    -o training.epochs=50 data.batch_size=64
-```
-
-### 评估
-
-```bash
-# 评估已保存的检查点
+# 评估某个检查点
 python scripts/evaluate.py \
-    --config csifeedback/configs/clnet_indoor_cr4.yaml \
-    --checkpoint experiments/clnet/indoor_cr4/YYYYMMDD_HHMMSS/checkpoints/last.pth
+    --config csifeedback/configs/baselines/clnet_indoor_cr4.yaml \
+    --checkpoint experiments/clnet/indoor_cr4/YYYYMMDD_HHMMSS/checkpoints/last.pth \
+    --split test
+
+# 汇总所有实验，只保留每个 (model, scenario, CR) 的完整运行
+python scripts/compare.py --latest --min-epochs 100
 ```
 
-## 批量训练
+> **GPU 注意**：训练前必须用 `CUDA_VISIBLE_DEVICES=0`（或 `1`）指定显卡，
+> 否则可能因 CUDA 初始化失败而报错。
 
-使用 `scripts/train_all.py` 可依次训练 `csifeedback/configs/` 下的所有 YAML 配置：
+## Baseline 参考结果
 
-> ⚠️ **注意**：批量训练前也请通过 `CUDA_VISIBLE_DEVICES` 指定 GPU，否则可能因 CUDA 初始化失败而报错。
+以下是本机已完成的 1000 epoch 训练中，测试集上观察到的最优 NMSE（dB）。
+这不是重新加载 checkpoint 的复评结果，而是训练期间 `test_freq=10` 记录的最优值。
+
+**Indoor**
+
+| CR | CLNet | STNet | CsiNet |
+|----|-------|-------|--------|
+| 1/4 | -27.87 | **-30.17** | -14.45 |
+| 1/8 | -15.57 | **-19.28** | -11.12 |
+| 1/16 | -10.68 | **-14.75** | -8.73 |
+| 1/32 | -8.95 | **-9.51** | -8.50 |
+| 1/64 | -6.04 | **-6.82** | -4.34 |
+
+**Outdoor**
+
+| CR | CLNet | STNet | CsiNet |
+|----|-------|-------|--------|
+| 1/4 | -5.90 | **-12.62** | -10.38 |
+| 1/8 | -8.00 | **-8.17** | -6.97 |
+| 1/16 | **-5.36** | -5.44 | -4.89 |
+| 1/32 | -3.43 | **-3.52** | -3.05 |
+| 1/64 | **-2.25** | -1.91 | -1.36 |
+
+完整协议、论文参考值和已知偏差见 [`docs/baselines.md`](docs/baselines.md)。
+
+## 分支与实验工作流
+
+```text
+main                        稳定基座：baseline + 统一实验设施
+ └── idea/<short-name>      一个 idea 一个分支，独立实验、独立配置
+      └── 结果达标后再合并回 main
+```
 
 ```bash
-# 训练所有配置（指定 GPU 0）
-CUDA_VISIBLE_DEVICES=0 python scripts/train_all.py
+# 1. 从稳定基座签出 idea 分支
+git switch main
+git pull
+git switch -c idea/dual_domain_transformer
 
-# 只训练匹配某一模式的配置
-CUDA_VISIBLE_DEVICES=0 python scripts/train_all.py --pattern "clnet_*.yaml"
+# 2. 实现模型 + 配置（见下文）
+# 3. 快速验证
+pytest tests/ -q
+CUDA_VISIBLE_DEVICES=0 python scripts/train.py \
+    --config csifeedback/configs/ideas/dual_domain_transformer/dual_domain_transformer_indoor_cr4.yaml \
+    -o training.epochs=2
+
+# 4. 完整训练 + 与 baseline 对比
+CUDA_VISIBLE_DEVICES=0 python scripts/train.py \
+    --config csifeedback/configs/ideas/dual_domain_transformer/dual_domain_transformer_indoor_cr4.yaml
+python scripts/compare.py --latest --min-epochs 100
 ```
 
-该脚本只是一个简单的循环包装，训练输出会直接打印到终端；如需保存日志，可重定向到文件。
+详细的 idea 生命周期、命名规范、公平对比与合并标准见
+[`docs/research_workflow.md`](docs/research_workflow.md)。
 
 ## 仓库结构
 
-```
+```text
 .
-├── csifeedback/          # 统一 Python 包
-│   ├── models/           # clnet、stnet、csinet
-│   ├── data/             # 统一 COST2100 数据加载器
-│   ├── metrics/          # 统一 NMSE + rho 计算
-│   ├── trainers/         # 统一训练循环
-│   ├── utils/            # 配置、检查点、设备、日志、学习率调度
-│   └── configs/          # YAML 实验配置
-├── scripts/              # train.py、evaluate.py
-├── tests/                # 单元测试与回归测试
-├── experiments/          # 训练输出（按时间戳组织）
-├── archive/              # 原始项目代码（只读参考）
-├── data/                 # COST2100 .mat 数据文件
+├── csifeedback/
+│   ├── models/
+│   │   ├── base.py              # CSIAutoencoder 接口
+│   │   ├── registry.py          # @register_model 模型注册表
+│   │   ├── clnet.py             # baseline
+│   │   ├── stnet.py             # baseline
+│   │   └── csinet.py            # baseline
+│   ├── trainers/
+│   │   ├── base.py              # 通用训练循环 + metrics.json
+│   │   ├── default.py           # 配置驱动的新模型通用 trainer
+│   │   ├── clnet.py             # baseline 专用训练行为
+│   │   ├── stnet.py
+│   │   └── csinet.py
+│   ├── data/cost2100.py         # 统一数据加载
+│   ├── metrics/csi_metrics.py   # 统一 NMSE / rho
+│   ├── utils/                   # 配置、检查点、设备、日志、调度、结果
+│   └── configs/
+│       ├── baselines/           # 30 个 baseline YAML（只读参考）
+│       └── ideas/               # 每个 idea 一个子目录
+├── scripts/
+│   ├── train.py                 # 统一训练入口
+│   ├── evaluate.py              # 统一评估入口（可输出 JSON）
+│   ├── train_all.py             # 递归批量训练
+│   └── compare.py               # 汇总/对比实验
+├── tests/                       # pytest 测试
+├── experiments/                 # 运行产物（gitignored）
+├── data/                        # COST2100 .mat（gitignored）
 ├── docs/
-│   ├── migration.md      # 从旧脚本迁移的说明
-│   └── architecture.md   # 三个模型的架构说明
-├── README.md
-├── requirements.txt
-├── setup.py
-└── pyproject.toml
+│   ├── research_workflow.md     # idea 分支与实验规范
+│   ├── baselines.md             # baseline 协议与参考结果
+│   ├── architecture.md          # baseline 网络结构
+│   ├── migration.md             # 历史迁移记录
+│   └── ideas/TEMPLATE.md        # idea 记录模板
+├── archive/                     # 三个原始项目（只读历史参考）
+├── AGENTS.md                    # 所有 coding agent 的统一协作说明
+└── README.md
 ```
 
-## 支持的压缩比
+## 添加新模型 / 新 idea
 
-| 模型   | CR=1/4 | 1/8 | 1/16 | 1/32 | 1/64 |
-|--------|--------|-----|------|------|------|
-| CLNet  | `reduction: 4`  | 8   | 16   | 32   | 64   |
-| STNet  | `encoded_dim: 512` | 256 | 128  | 64   | 32   |
-| CsiNet | `encoded_dim: 512` | 256 | 128  | 64   | 32   |
+### 1. 实现模型并注册
 
-压缩比与模型参数的详细对应关系见 [`docs/architecture.md`](docs/architecture.md)。
+在 `csifeedback/models/` 下新建模块，继承 `CSIAutoencoder`，并用
+`@register_model` 注册工厂：
 
-## 当前状态
+```python
+# csifeedback/models/dual_domain_transformer.py
+from csifeedback.models.base import CSIAutoencoder
+from csifeedback.models.registry import register_model
 
-- **配置矩阵**：已补全 30 个 YAML 配置（3 模型 × 2 场景 × 全部压缩比，CsiNet 额外包含 1/8）。
-- **测试**：`pytest tests/` 全部通过（67 passed，0 skipped），覆盖模型、数据、指标、配置加载、单 batch 过拟合、OCP 扩展点。
-- **实现一致性**：已完成与三个原始仓库的全面对照，修复了 CLNet cosine warmup 学习率起点不一致的问题；网络结构、数据预处理、指标计算与原始实现一致。
-- **完整训练**：使用 `scripts/train_all.py` 批量执行所有 YAML 配置。
 
-## 主要特性
+class DualDomainTransformer(CSIAutoencoder):
+    def __init__(self, encoded_dim: int = 512, depth: int = 2):
+        super().__init__()
+        self._encoded_dim = encoded_dim
+        self.depth = depth
 
-- **配置驱动**：所有实验通过 YAML 配置管理，命令行可覆盖任意字段。
-- **统一入口**：`scripts/train.py` 和 `scripts/evaluate.py` 支持三个模型。
-- **训练可视化**：每个 epoch 带 `tqdm` 进度条，显示当前 loss、学习率、速度、ETA；epoch 结束后显示本轮/累计/预计剩余用时。
-- **开闭原则**：新模型只需在 `models/` 和 `trainers/` 注册工厂，通过 `model.extra` 传递自定义参数，无需修改已有模型代码。
-- **检查点管理**：自动保存 `last.pth`、`best_rho.pth`、`best_nmse.pth`（CLNet/STNet）或 `best_val.pth`（CsiNet），以及按周期的 `epoch{N}.pth`。
+    @property
+    def encoded_dim(self) -> int:
+        return self._encoded_dim
 
-## 数据
+    def get_encoder_state(self) -> dict:
+        return self.encoder.state_dict()
 
-COST2100 数据集应放置在仓库根目录的 `data/` 下：
+    def get_decoder_state(self) -> dict:
+        return self.decoder.state_dict()
 
+    def forward(self, x):
+        ...
+
+
+@register_model("dual_domain_transformer")
+def create_dual_domain_transformer(encoded_dim: int = 512, **kwargs):
+    return DualDomainTransformer(encoded_dim=encoded_dim, **kwargs)
 ```
-data/
-├── DATA_Htrainin.mat
-├── DATA_Hvalin.mat
-├── DATA_Htestin.mat
-├── DATA_HtestFin_all.mat
-├── DATA_Htrainout.mat
-├── DATA_Hvalout.mat
-├── DATA_Htestout.mat
-└── DATA_HtestFout_all.mat
+
+然后在 `csifeedback/models/__init__.py` 中导入该模块，使注册生效：
+
+```python
+from csifeedback.models import dual_domain_transformer as _dual_domain_transformer  # noqa: F401
+```
+
+已有模型代码不需要改动。`model.extra` 中的任意字段会透传给工厂函数：
+
+```yaml
+model:
+  name: "dual_domain_transformer"
+  encoded_dim: 512
+  extra:
+    depth: 3
+```
+
+### 2. 添加配置
+
+```yaml
+# csifeedback/configs/ideas/dual_domain_transformer/dual_domain_transformer_indoor_cr4.yaml
+model:
+  name: "dual_domain_transformer"
+  encoded_dim: 512
+  extra:
+    depth: 3
+data:
+  data_dir: "./data"
+  scenario: "indoor"
+  batch_size: 200
+optimizer:
+  name: "adam"
+  lr: 2.0e-3
+scheduler:
+  name: "cosine"
+training:
+  epochs: 1000
+  checkpoint_dir: "./experiments"
+  select_best: "val_loss"
+```
+
+### 3. 训练器
+
+如果新模型使用标准 MSE + 单优化器 + Adam/AdamW/SGD，**不需要写 trainer**：
+未注册的模型会自动回退到 `DefaultTrainer`，由配置驱动优化器和调度器。
+
+只有需要自定义 loss、双优化器、特殊参数更新时，才实现专用 trainer，并在
+`csifeedback/trainers/__init__.py` 的 `_TRAINER_MAP` 中注册。
+
+`training.select_best` 控制最优 checkpoint 的选择依据：
+
+| 取值 | 行为 |
+|------|------|
+| `all`（默认） | 同时保存 test rho 最优和 test NMSE 最优，与 CLNet/STNet 一致 |
+| `test_rho` | 只保存 test rho 最优 |
+| `test_nmse` | 只保存 test NMSE 最优 |
+| `val_loss` | 只保存验证损失最优（推荐新 idea 使用，避免测试集选模型） |
+
+无论选择哪种策略，`metrics.json` 都会记录完整的验证/测试历史。
+
+### 4. 测试与快速验证
+
+```bash
+pytest tests/ -q
+
+# 2 个 epoch 的 smoke test
+CUDA_VISIBLE_DEVICES=0 python scripts/train.py \
+    --config csifeedback/configs/ideas/<idea>/<idea>_indoor_cr4.yaml \
+    -o training.epochs=2 training.checkpoint_freq=0
+```
+
+## 实验产物与对比
+
+每次训练自动创建：
+
+```text
+experiments/{model}/{scenario}_cr{X}/{YYYYMMDD_HHMMSS}/
+├── checkpoints/
+│   ├── last.pth
+│   ├── best_rho.pth
+│   ├── best_nmse.pth
+│   ├── best_val.pth        # CsiNet 或 select_best=val_loss
+│   └── epoch{N}.pth
+├── logs/train.log
+└── metrics.json            # 结构化运行摘要
+```
+
+`metrics.json` 包含配置、最优 rho/NMSE、评估历史、耗时、参数量和 git commit。
+`scripts/compare.py` 会优先读取它；对早期没有 `metrics.json` 的运行，会回退解析
+`train.log`。
+
+```bash
+# 表格：按 NMSE 从优到劣
+python scripts/compare.py --latest --min-epochs 100
+
+# 只看 indoor、指定模型
+python scripts/compare.py --models clnet stnet csinet --scenarios indoor
+
+# Markdown / CSV
+python scripts/compare.py --format markdown
+python scripts/compare.py --format csv > results.csv
 ```
 
 ## 测试
@@ -126,31 +300,41 @@ data/
 pytest tests/
 ```
 
-测试覆盖模型实例化、前向 shape、确定性前向、指标正确性、单 batch 过拟合等，全部可在 CPU 上运行，无需完整训练。
+测试覆盖模型实例化、前向 shape、指标正确性、数据加载、配置矩阵、
+单 batch 过拟合、模型注册、通用 trainer 与 `metrics.json` 落盘。
+所有测试均可在 CPU 上运行。
 
-## 旧代码归档
+## 环境
 
-原始三个独立项目已完整归档到 `archive/`，仅作历史参考，不再维护。本项目使用统一入口 `scripts/train.py` 和 `scripts/evaluate.py` 从头训练与评估。
+- Linux GPU 服务器（实验室）
+- Miniforge，Conda 环境 `csifeedback`
+- Python 3.12
+- PyTorch 2.11.0+cu128（CUDA 12.8）
+- 2 × NVIDIA GeForce RTX 5090（32 GB）
 
-训练产生的检查点按时间戳保存在 `experiments/{model_name}/{scenario}_cr{X}/YYYYMMDD_HHMMSS/checkpoints/` 下。
+训练前：
 
-## 运行环境
+```bash
+conda activate csifeedback
+export CUDA_VISIBLE_DEVICES=0
+```
 
-当前部署在实验室 Linux GPU 服务器上：
+## 文档索引
 
-- OS：Linux
-- 环境管理器：Miniforge
-- Conda 环境：`csifeedback`
-- Python：3.12.13
-- PyTorch：2.11.0+cu128（CUDA 12.8）
-- GPU：2 × NVIDIA GeForce RTX 5090（32 GB 显存）
+- [`docs/research_workflow.md`](docs/research_workflow.md) —— idea 分支、实验与合并规范
+- [`docs/baselines.md`](docs/baselines.md) —— baseline 协议、参考结果与完整性规则
+- [`docs/architecture.md`](docs/architecture.md) —— 三个 baseline 的网络结构
+- [`docs/migration.md`](docs/migration.md) —— 从旧独立项目迁移的历史记录
+- [`AGENTS.md`](AGENTS.md) —— coding agent 协作说明
 
-训练前请先激活 `csifeedback` 环境：`conda activate csifeedback`，
-并通过 `CUDA_VISIBLE_DEVICES` 指定要使用的 GPU（例如 `CUDA_VISIBLE_DEVICES=0`），否则可能因 CUDA 初始化失败而报错。
+## 历史与归档
+
+`archive/` 保留三个原始开源项目（CLNet / STNet / CsiNet）的源码与 README，
+仅作历史参考，不再维护。当前 baseline 已统一到 `csifeedback/` 包中。
 
 ## 引用
 
-如果在研究中使用本代码，请引用原始论文：
+如果研究中使用本代码，请引用三个 baseline 的原始论文：
 
 ```bibtex
 @article{ji2021clnet,
@@ -158,6 +342,13 @@ pytest tests/
   author={Ji, Xiangjun and Li, Chao-Kai},
   journal={IEEE Wireless Communications Letters},
   year={2021}
+}
+
+@article{mourya2022stnet,
+  title={A Spatially Separable Attention Mechanism For Massive MIMO CSI Feedback},
+  author={Mourya, Rahul and Amuru, SaiDhiraj},
+  journal={arXiv preprint arXiv:2201.04605},
+  year={2022}
 }
 
 @article{wen2018csinet,
