@@ -40,8 +40,7 @@ class CsiNetTrainer(BaseTrainer):
         if self.training_config.select_best not in {"all", "val_loss"}:
             return
         if val_loss < self.best_val_loss:
-            self.best_val_loss = val_loss
-            self._save_checkpoint("best_val.pth")
+            self._save_best_val_checkpoint(val_loss)
             self.logger.info(
                 "新的最优验证损失：%.4e（已保存 best_val.pth）",
                 val_loss,

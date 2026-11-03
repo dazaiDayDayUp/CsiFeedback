@@ -16,7 +16,11 @@ init(autoreset=True)
 
 from csifeedback.metrics.csi_metrics import compute_nmse, compute_rho
 from csifeedback.models.base import CSIAutoencoder
-from csifeedback.utils.checkpoint import load_checkpoint, save_checkpoint
+from csifeedback.utils.checkpoint import (
+    load_checkpoint,
+    load_model_state_dict,
+    save_checkpoint,
+)
 from csifeedback.utils.config import ExperimentConfig, TrainingConfig, config_to_dict
 from csifeedback.utils.logging import get_logger
 from csifeedback.utils.results import git_commit, write_metrics
@@ -59,6 +63,10 @@ class BaseTrainer:
         self.last_train_loss: Optional[float] = None
         self.last_val: Optional[Dict[str, Any]] = None
         self.last_test: Optional[Dict[str, Any]] = None
+        # 最优 checkpoint 的选择记录：文件名 -> 保存时的 epoch 与指标。
+        self.selected: Dict[str, Dict[str, Any]] = {}
+        # val 在 test 之前执行，用 epoch 标记等待同一轮 test 指标回填。
+        self._pending_best_val_epoch: Optional[int] = None
 
         self.exp_dir = self._make_exp_dir()
         self._setup_logging()
@@ -333,14 +341,24 @@ class BaseTrainer:
 
     def _maybe_update_best_metrics(self, rho: float, nmse: float) -> None:
         select_best = self.training_config.select_best
+        record = {"epoch": self.epoch + 1, "rho": rho, "nmse": nmse}
         if rho > self.best_rho:
             self.best_rho = rho
             if select_best in {"all", "test_rho"}:
                 self._save_checkpoint("best_rho.pth")
+                self.selected["best_rho"] = dict(record)
         if nmse < self.best_nmse:
             self.best_nmse = nmse
             if select_best in {"all", "test_nmse"}:
                 self._save_checkpoint("best_nmse.pth")
+                self.selected["best_nmse"] = dict(record)
+
+        if self._pending_best_val_epoch is not None:
+            if self._pending_best_val_epoch == self.epoch + 1:
+                val_record = self.selected.get("best_val")
+                if val_record is not None:
+                    val_record.update({"rho": rho, "nmse": nmse})
+            self._pending_best_val_epoch = None
 
     def _maybe_save_best(self, val_loss: float) -> None:
         """按验证损失保存最优模型（``select_best=val_loss`` 时）。
@@ -350,8 +368,17 @@ class BaseTrainer:
         if self.training_config.select_best != "val_loss":
             return
         if val_loss < self.best_val_loss:
-            self.best_val_loss = val_loss
-            self._save_checkpoint("best_val.pth")
+            self._save_best_val_checkpoint(val_loss)
+
+    def _save_best_val_checkpoint(self, val_loss: float) -> None:
+        """保存 ``best_val.pth`` 并记录对应的选择信息。"""
+        self.best_val_loss = val_loss
+        self._save_checkpoint("best_val.pth")
+        self.selected["best_val"] = {
+            "epoch": self.epoch + 1,
+            "val_loss": val_loss,
+        }
+        self._pending_best_val_epoch = self.epoch + 1
 
     def _save_periodic_checkpoint(self, epoch: int) -> None:
         freq = self.training_config.checkpoint_freq
@@ -371,7 +398,7 @@ class BaseTrainer:
             duration = round(time.time() - self.train_started_at, 1)
 
         payload = {
-            "schema_version": 1,
+            "schema_version": 2,
             "model": self.config.model.name,
             "model_class": self.model.__class__.__name__,
             "scenario": self.config.data.scenario,
@@ -384,11 +411,13 @@ class BaseTrainer:
             "model_parameters": sum(p.numel() for p in self.model.parameters()),
             "git_commit": git_commit(),
             "config": config_to_dict(self.config),
+            "select_best": self.training_config.select_best,
             "best": {
                 "rho": self.best_rho,
                 "nmse": self.best_nmse,
                 "val_loss": self.best_val_loss,
             },
+            "selected": self.selected,
             "last": {
                 "train_loss": self.last_train_loss,
                 "val": self.last_val,
@@ -430,7 +459,7 @@ class BaseTrainer:
         if resume_path is None:
             return
         ckpt = load_checkpoint(resume_path, map_location=str(self.device))
-        self.model.load_state_dict(ckpt.model_state_dict)
+        load_model_state_dict(self.model, ckpt.model_state_dict)
         self.optimizer.load_state_dict(ckpt.optimizer_state_dict)
         if self.scheduler is not None and ckpt.scheduler_state_dict is not None:
             self.scheduler.load_state_dict(ckpt.scheduler_state_dict)

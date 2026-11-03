@@ -122,8 +122,9 @@ def create_my_idea(encoded_dim: int = 512, **kwargs) -> CSIAutoencoder:
 
 ### 实验摘要
 
-`BaseTrainer` 会在每次运行目录写 `metrics.json`，包含配置、最优 rho/NMSE、
-评估记录、耗时、参数量和 git commit。新增训练逻辑时不要绕过它。
+`BaseTrainer` 会在每次运行目录写 `metrics.json`，包含配置、`select_best`、
+最优 rho/NMSE、实际被选 checkpoint 的指标（`selected`）、评估记录、耗时、
+参数量和 git commit。新增训练逻辑时不要绕过它。
 
 ## 实验规范
 

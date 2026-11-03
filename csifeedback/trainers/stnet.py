@@ -8,7 +8,7 @@ from torch.optim import Adam
 
 from csifeedback.models.base import CSIAutoencoder
 from csifeedback.trainers.base import BaseTrainer
-from csifeedback.utils.checkpoint import load_checkpoint
+from csifeedback.utils.checkpoint import load_checkpoint, load_model_state_dict
 from csifeedback.utils.config import ExperimentConfig
 from csifeedback.utils.scheduler import FakeLR
 
@@ -82,7 +82,7 @@ class STNetTrainer(BaseTrainer):
         if resume_path is None:
             return
         ckpt = load_checkpoint(resume_path, map_location=str(self.device))
-        self.model.load_state_dict(ckpt.model_state_dict)
+        load_model_state_dict(self.model, ckpt.model_state_dict)
         opt_state = ckpt.optimizer_state_dict
         if isinstance(opt_state, dict) and "opt_enc" in opt_state:
             self.opt_enc.load_state_dict(opt_state["opt_enc"])

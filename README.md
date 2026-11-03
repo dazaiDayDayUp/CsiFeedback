@@ -291,9 +291,10 @@ experiments/{model}/{scenario}_cr{X}/{YYYYMMDD_HHMMSS}/
 └── metrics.json            # 结构化运行摘要
 ```
 
-`metrics.json` 包含配置、最优 rho/NMSE、评估记录、耗时、参数量和 git commit。
+`metrics.json` 包含配置、最优 rho/NMSE、`select_best` 策略、实际被选中的
+checkpoint 指标（`selected`）、评估记录、耗时、参数量和 git commit。
 `scripts/compare.py` 会优先读取它；对早期没有 `metrics.json` 的运行，会回退解析
-`train.log`。
+`train.log`，此时 `select` 列显示 `unknown`。
 
 ```bash
 # 表格：按 NMSE 从优到劣

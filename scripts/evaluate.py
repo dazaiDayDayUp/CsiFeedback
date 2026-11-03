@@ -15,7 +15,7 @@ import torch
 from csifeedback.data.cost2100 import get_cost2100_loaders
 from csifeedback.metrics.csi_metrics import compute_nmse, compute_rho
 from csifeedback.models import get_model_from_config
-from csifeedback.utils.checkpoint import load_checkpoint
+from csifeedback.utils.checkpoint import load_checkpoint, load_model_state_dict
 from csifeedback.utils.config import load_config
 from csifeedback.utils.device import setup_device
 from csifeedback.utils.results import json_safe
@@ -56,7 +56,7 @@ def main():
 
     model = get_model_from_config(config.model).to(device)
     ckpt = load_checkpoint(args.checkpoint, map_location=str(device))
-    model.load_state_dict(ckpt.model_state_dict)
+    load_model_state_dict(model, ckpt.model_state_dict)
     model.eval()
 
     criterion = torch.nn.MSELoss()

@@ -17,6 +17,7 @@
 - [ ] 使用相同的 `compute_nmse` / `compute_rho` 实现
 - [ ] 与 baseline 使用相同的 epoch 预算和可比的 batch size
 - [ ] 明确 checkpoint 选择策略（`training.select_best`）
+- [ ] 报告 `metrics.json` 的 `selected`（实际选中 checkpoint 的指标），并与 `best` 区分
 - [ ] 新模型与 baseline 的选择策略不同时，在论文中注明
 - [ ] 不使用测试集调参；测试集只用于最终报告
 

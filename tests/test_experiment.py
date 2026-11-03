@@ -4,6 +4,7 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
@@ -18,7 +19,7 @@ from csifeedback.models import (
     get_model,
     register_model,
 )
-from csifeedback.trainers import DefaultTrainer, get_trainer
+from csifeedback.trainers import CsiNetTrainer, DefaultTrainer, get_trainer
 from csifeedback.utils.config import (
     DataConfig,
     ExperimentConfig,
@@ -109,6 +110,44 @@ def test_default_trainer_writes_metrics(tmp_path):
     assert metrics["best"]["nmse"] is not None
     assert len(metrics["history"]) == 4  # 2 epochs × (val + test)
     assert metrics["config"]["training.epochs"] == 2
+    assert metrics["schema_version"] == 2
+    assert metrics["select_best"] == "all"
+
+
+def _make_paired_loader(data: torch.Tensor) -> DataLoader:
+    """构造同时返回稀疏 CSI 与原始 CSI 的加载器，使 rho 可计算。"""
+    raw = torch.rand(data.size(0), 32, 125, 2)
+    return DataLoader(TensorDataset(data, raw), batch_size=2)
+
+
+def test_select_best_all_records_best_checkpoints(tmp_path):
+    config = _make_config(tmp_path, "unregistered_tiny_net", select_best="all")
+    trainer = DefaultTrainer(config, TinyModel(), torch.device("cpu"))
+
+    data = torch.rand(4, 2, 32, 32)
+    train_loader = _make_paired_loader(data)
+    val_loader = _make_paired_loader(data)
+    test_loader = _make_paired_loader(data)
+    trainer.fit(train_loader, val_loader, test_loader)
+
+    checkpoint_dir = Path(trainer.exp_dir) / "checkpoints"
+    assert (checkpoint_dir / "best_rho.pth").is_file()
+    assert (checkpoint_dir / "best_nmse.pth").is_file()
+
+    metrics = json.loads(
+        (Path(trainer.exp_dir) / "metrics.json").read_text(encoding="utf-8")
+    )
+    selected = metrics["selected"]
+    assert {"best_rho", "best_nmse"} <= set(selected)
+    for name in ("best_rho", "best_nmse"):
+        assert {"epoch", "rho", "nmse"} <= set(selected[name])
+        assert selected[name]["rho"] is not None
+
+    tests = [item for item in metrics["history"] if item["kind"] == "test"]
+    assert metrics["best"]["rho"] == pytest.approx(max(item["rho"] for item in tests))
+    assert metrics["best"]["nmse"] == pytest.approx(min(item["nmse"] for item in tests))
+    assert selected["best_rho"]["rho"] == pytest.approx(metrics["best"]["rho"])
+    assert selected["best_nmse"]["nmse"] == pytest.approx(metrics["best"]["nmse"])
 
 
 def test_val_based_checkpoint_selection(tmp_path):
@@ -116,13 +155,59 @@ def test_val_based_checkpoint_selection(tmp_path):
     trainer = DefaultTrainer(config, TinyModel(), torch.device("cpu"))
 
     data = torch.rand(4, 2, 32, 32)
-    loader = DataLoader(TensorDataset(data), batch_size=2)
+    loader = _make_paired_loader(data)
     trainer.fit(loader, loader, loader)
 
     checkpoint_dir = Path(trainer.exp_dir) / "checkpoints"
     assert (checkpoint_dir / "best_val.pth").is_file()
     assert not (checkpoint_dir / "best_rho.pth").exists()
     assert not (checkpoint_dir / "best_nmse.pth").exists()
+
+    metrics = json.loads(
+        (Path(trainer.exp_dir) / "metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["select_best"] == "val_loss"
+    assert set(metrics["selected"]) == {"best_val"}
+
+    best_val = metrics["selected"]["best_val"]
+    assert {"epoch", "val_loss", "rho", "nmse"} <= set(best_val)
+    same_epoch_test = next(
+        item
+        for item in metrics["history"]
+        if item["kind"] == "test" and item["epoch"] == best_val["epoch"]
+    )
+    assert best_val["rho"] == pytest.approx(same_epoch_test["rho"])
+    assert best_val["nmse"] == pytest.approx(same_epoch_test["nmse"])
+
+
+def test_val_based_best_without_test_epoch(tmp_path):
+    config = _make_config(tmp_path, "unregistered_tiny_net", select_best="val_loss")
+    trainer = DefaultTrainer(config, TinyModel(), torch.device("cpu"))
+
+    data = torch.rand(4, 2, 32, 32)
+    loader = DataLoader(TensorDataset(data), batch_size=2)
+    trainer.fit(loader, loader, None)
+
+    metrics = json.loads(
+        (Path(trainer.exp_dir) / "metrics.json").read_text(encoding="utf-8")
+    )
+    assert set(metrics["selected"]["best_val"]) == {"epoch", "val_loss"}
+
+
+def test_csinet_trainer_records_best_val(tmp_path):
+    config = _make_config(tmp_path, "csinet", select_best="all")
+    trainer = get_trainer(config, TinyModel(), torch.device("cpu"))
+    assert isinstance(trainer, CsiNetTrainer)
+
+    data = torch.rand(4, 2, 32, 32)
+    loader = _make_paired_loader(data)
+    trainer.fit(loader, loader, loader)
+
+    metrics = json.loads(
+        (Path(trainer.exp_dir) / "metrics.json").read_text(encoding="utf-8")
+    )
+    best_val = metrics["selected"]["best_val"]
+    assert {"epoch", "val_loss", "rho", "nmse"} <= set(best_val)
 
 
 def test_default_trainer_prepares_cosine_schedule(tmp_path):

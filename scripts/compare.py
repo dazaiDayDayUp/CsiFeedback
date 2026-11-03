@@ -30,6 +30,7 @@ TEST_RE = re.compile(
     r"test_loss:\s*[\d.eE+-]+\s+rho:\s*([\d.]+)\s+NMSE:\s*(-?[\d.]+)\s*dB"
 )
 EPOCH_RE = re.compile(r"Epoch \[(\d+)/(\d+)\]")
+DEFAULT_MIN_EPOCHS = 100
 
 
 @dataclass
@@ -40,6 +41,7 @@ class Run:
     rho: Optional[float]
     nmse: Optional[float]
     epochs: Optional[int]
+    selection: str
     run: str
     source: str
     finished_at: str = ""
@@ -53,22 +55,90 @@ def _split_group(group: str) -> tuple[str, int]:
     return match.group(1), int(match.group(2))
 
 
+def _select_best(data: dict) -> str:
+    """读取运行使用的 checkpoint 选择策略。
+
+    优先顶层 ``select_best``；旧版 ``metrics.json`` 只把它写在
+    ``config.training.select_best`` 中（扁平点分键或嵌套字典），因此同时兼容。
+    """
+    select_best = data.get("select_best")
+    if select_best is None:
+        config = data.get("config")
+        if isinstance(config, dict):
+            select_best = config.get("training.select_best")
+            if select_best is None:
+                training = config.get("training")
+                if isinstance(training, dict):
+                    select_best = training.get("select_best")
+    return str(select_best) if select_best else "unknown"
+
+
+def _metric_pair(entry: object) -> tuple[Optional[float], Optional[float]]:
+    """从 ``{"rho": ..., "nmse": ...}`` 条目中取两个指标。"""
+    if not isinstance(entry, dict):
+        return None, None
+    return entry.get("rho"), entry.get("nmse")
+
+
+def _selected_metrics(data: dict) -> tuple[Optional[float], Optional[float]]:
+    """按 ``select_best`` 取出被选检查点的 rho / NMSE。
+
+    ``selected`` 缺失或缺少对应条目时返回 ``(None, None)``；是否回退到
+    ``best`` 由调用方根据选择策略是否已知决定。
+    """
+    selected = data.get("selected")
+    if not isinstance(selected, dict):
+        return None, None
+
+    selection = _select_best(data)
+    if selection == "val_loss":
+        return _metric_pair(selected.get("best_val"))
+    if selection == "test_rho":
+        return _metric_pair(selected.get("best_rho"))
+    if selection == "test_nmse":
+        return _metric_pair(selected.get("best_nmse"))
+    if selection == "all":
+        rho, _ = _metric_pair(selected.get("best_rho"))
+        _, nmse = _metric_pair(selected.get("best_nmse"))
+        return rho, nmse
+    return None, None
+
+
+def _infer_model(relative: Path, root: Path, fallback: str = "?") -> str:
+    """按 ``<model>/<scenario>_cr<X>/<run>`` 的相对路径推断模型名。
+
+    ``root`` 直接指向模型目录时相对路径只剩场景与运行目录，用 ``root.name``
+    作为模型名。
+    """
+    if len(relative.parts) >= 3:
+        return relative.parts[-3]
+    if len(relative.parts) == 2:
+        return root.name
+    return fallback
+
+
 def _from_metrics(path: Path, root: Path) -> Run:
     data = json.loads(path.read_text(encoding="utf-8"))
     run_dir = path.parent
     relative = run_dir.relative_to(root)
-    model = str(data.get("model", relative.parts[0] if relative.parts else "?"))
+    model = _infer_model(relative, root, fallback=str(data.get("model") or "?"))
     scenario = str(data.get("scenario", "?"))
     cr_label = str(data.get("compression_ratio", "cr?"))
     cr = int(cr_label[2:]) if cr_label.startswith("cr") and cr_label[2:].isdigit() else -1
     best = data.get("best") or {}
+    selection = _select_best(data)
+    if isinstance(data.get("selected"), dict) and selection != "unknown":
+        rho, nmse = _selected_metrics(data)
+    else:
+        rho, nmse = best.get("rho"), best.get("nmse")
     return Run(
         model=model,
         scenario=scenario,
         cr=cr,
-        rho=best.get("rho"),
-        nmse=best.get("nmse"),
+        rho=rho,
+        nmse=nmse,
         epochs=data.get("epochs_completed"),
+        selection=selection,
         run=run_dir.name,
         source="metrics.json",
         finished_at=str(data.get("finished_at") or ""),
@@ -86,11 +156,11 @@ def _from_log(path: Path, root: Path) -> Optional[Run]:
     epochs = [int(done) for done, _ in EPOCH_RE.findall(text)]
     run_dir = path.parent.parent
     relative = run_dir.relative_to(root)
+    model = _infer_model(relative, root)
     if len(relative.parts) >= 2:
-        model = relative.parts[-3] if len(relative.parts) >= 3 else relative.parts[0]
         scenario, cr = _split_group(relative.parts[-2])
     else:
-        model, scenario, cr = "?", "?", -1
+        scenario, cr = "?", -1
 
     return Run(
         model=model,
@@ -99,6 +169,7 @@ def _from_log(path: Path, root: Path) -> Optional[Run]:
         rho=max(rhos),
         nmse=min(nmses),
         epochs=max(epochs) if epochs else None,
+        selection="unknown",
         run=run_dir.name,
         source="train.log",
     )
@@ -143,6 +214,14 @@ def filter_runs(
     return result
 
 
+def filter_min_epochs(runs: Iterable[Run], min_epochs: int) -> list[Run]:
+    """过滤完成 epoch 数不足的运行；未知 epoch 按 0 处理。"""
+    result = list(runs)
+    if min_epochs <= 0:
+        return result
+    return [run for run in result if (run.epochs or 0) >= min_epochs]
+
+
 def keep_latest(runs: Iterable[Run]) -> list[Run]:
     latest: dict[tuple[str, str, int], Run] = {}
     for run in runs:
@@ -177,6 +256,7 @@ def _rows(runs: Iterable[Run]) -> list[list[str]]:
             _fmt(run.rho),
             _fmt(run.nmse),
             str(run.epochs) if run.epochs is not None else "—",
+            run.selection,
             run.source,
             run.run,
         ]
@@ -184,7 +264,17 @@ def _rows(runs: Iterable[Run]) -> list[list[str]]:
     ]
 
 
-HEADER = ["model", "scenario", "CR", "rho", "NMSE(dB)", "epochs", "source", "run"]
+HEADER = [
+    "model",
+    "scenario",
+    "CR",
+    "rho",
+    "NMSE(dB)",
+    "epochs",
+    "select",
+    "source",
+    "run",
+]
 
 
 def _print_table(rows: list[list[str]]) -> None:
@@ -233,8 +323,8 @@ def main() -> None:
     parser.add_argument(
         "--min-epochs",
         type=int,
-        default=0,
-        help="只显示至少完成 N 个 epoch 的运行（用于过滤 smoke test）",
+        default=DEFAULT_MIN_EPOCHS,
+        help="只显示至少完成 N 个 epoch 的运行（默认 100，过滤 smoke test 等短运行）",
     )
     parser.add_argument(
         "--sort",
@@ -256,8 +346,7 @@ def main() -> None:
 
     runs = discover(root, include_logs=not args.metrics_only)
     runs = filter_runs(runs, args.models, args.scenarios, args.cr)
-    if args.min_epochs > 0:
-        runs = [run for run in runs if (run.epochs or 0) >= args.min_epochs]
+    runs = filter_min_epochs(runs, args.min_epochs)
     if args.latest:
         runs = keep_latest(runs)
     runs = sort_runs(runs, args.sort)

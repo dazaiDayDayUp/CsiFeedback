@@ -112,6 +112,8 @@ python scripts/compare.py --latest --min-epochs 1000 --format markdown
 - 同一 batch size 或至少同一 epoch 预算；
 - 同一指标实现；
 - 同样的 checkpoint 选择策略（test rho / test NMSE / val loss）；
+- 报告 `metrics.json` 的 `selected`（实际被选 checkpoint 的指标），不要用 `best`
+  （训练中观察到的 test 最优）冒充选择结果；
 - 对比时使用完整运行，不用 smoke test 或中途结果。
 
 新 idea 推荐在配置中设置：

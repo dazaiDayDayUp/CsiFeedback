@@ -128,7 +128,7 @@ Decoder
 
 ### Decoder
 
-Decoder 有一个关键实现：**`decoder_feature` 产生的 `out` 张量被复用到两个 WTL 循环中**，PyTorch 会自动 broadcast。
+Decoder 的一个关键实现是：**`decoder_feature` 产生的 `out` 张量被复用到两个 WTL 循环中**。`out` 与两个循环中的 `x` 都是 `(N, 2, 32, 32)`，因此 `x + out` 是同形状逐元素相加，不涉及广播。
 
 1. `Linear(encoded_dim, 2 * 32 * 32)` 恢复特征
 2. reshape 为 `(N, 2, 32, 32)`
@@ -138,10 +138,10 @@ Decoder 有一个关键实现：**`decoder_feature` 产生的 `out` 张量被复
    - 对每个 WTL 块：`x = block(x + out)`
    - LayerNorm + `ConvTranspose2d`（32×32 → 64×64）+ `conv4`（64×64 → 32×32）
 5. 第二个 WTL 循环：
-   - 对每个 WTL 块：`x = block(x + out)`（`out` 广播到 32×32）
+   - 对每个 WTL 块：`x = block(x + out)`
    - LayerNorm + Sigmoid
 
-> 注意：`out` 形状始终为 `(N, 2, 32, 32)`，在第二个循环中与同样为 32×32 的 `x` 相加。两个 WTL 循环实际都在 32×32 分辨率上进行，broadcast 行为已被 `test_stnet_decoder_out_broadcast_preserved` 显式保留。
+> 注意：两个 WTL 循环都在 32×32 分辨率上进行，`out` 的复用是该 baseline 的固定行为。
 
 ### 关键模块
 
@@ -150,7 +150,7 @@ Decoder 有一个关键实现：**`decoder_feature` 产生的 `out` 张量被复
   - `GlobalAttention`：对下采样后的键值做全局自注意力。
   - 每个 attention 后接 MLP（GELU 激活）。
 
-- **CRBlock**：与 CLNet 中的 CRBlock 结构相同。
+- **CRBlock**：与 CLNet 的 CRBlock 类似，但 path1 使用 `1×9` + `9×1`（CLNet 为 `1×3` + `3×1`）。
 
 - **hsigmoid**：同样使用 `F.relu6(x + 3) / 6`。
 
@@ -221,7 +221,7 @@ CsiNet 使用单个 Adam 优化器，并按照验证损失保存最优模型（`
 | STNet | 双 Adam（enc/dec 分离），betas=(0.5, 0.999) | const | test rho / test NMSE |
 | CsiNet | 单 Adam，betas=(0.9, 0.999) | const | val loss |
 
-统一入口 `scripts/train.py` 会根据 `model.name` 自动选择对应 trainer；配置中的 `optimizer.betas`、`separate_enc_dec`、`scheduler.name` 需要与模型匹配，具体可参考 `csifeedback/configs/baselines/` 下的示例 YAML。
+统一入口 `scripts/train.py` 会根据 `model.name` 自动选择对应 trainer；配置中的 `optimizer.betas` 和 `scheduler.name` 需要与模型匹配，具体可参考 `csifeedback/configs/baselines/` 下的示例 YAML。`optimizer.separate_enc_dec` 目前只是保留字段，trainer 选择由 `model.name` 决定。
 
 CLNet 的 cosine warmup：warmup 阶段学习率从 0 线性增长到初始 lr，之后进入余弦退火到 `eta_min`。
 

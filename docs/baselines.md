@@ -28,14 +28,14 @@
 | 随机种子 | `null`（不做固定种子；正式实验建议显式设置 `training.seed`） |
 | 评估频率 | `val_freq=10`、`test_freq=10` |
 | 检查点频率 | 每 50 epoch |
-| 最优模型 | `training.select_best: "all"`：test rho 最优 + test NMSE 最优（CsiNet 额外按 val loss） |
+| 最优模型 | `training.select_best: "all"`：test rho 最优 + test NMSE 最优（CsiNet 额外按 val loss）；`metrics.json.selected` 记录实际选中 checkpoint 的指标 |
 
 模型特定超参数：
 
 | 模型 | 优化器 | 学习率 | 调度 |
 |------|--------|--------|------|
 | CLNet | Adam，betas=(0.9, 0.999) | 2e-3 | cosine warmup（30 epoch warmup，退火到 5e-5） |
-| STNet | 双 Adam（encoder/decoder 分离），betas=(0.5, 0.999) | 2e-3 | const |
+| STNet | 双 Adam（encoder/decoder 分离），betas=(0.5, 0.999) | 1e-3 | const |
 | CsiNet | Adam，betas=(0.9, 0.999) | 1e-3 | const |
 
 压缩比映射（输入维度 2048）：
@@ -76,6 +76,12 @@ NMSE 单位为 dB（越低越好），rho 为余弦相似度（越高越好）�
 > 说明：以上数值来自训练过程中 `test_freq=10` 记录的最优值，不是重新加载
 > `best_*.pth` 后的复评。若要用于论文对比，建议用 `scripts/evaluate.py`
 > 对固定 checkpoint 重新评测，并固定随机种子、重复多次取均值。
+
+> 这 30 次运行早于当前 `metrics.json` schema（2026-06 产生），只有 `train.log`。
+> `scripts/compare.py` 会回退解析日志，`select` 列显示 `unknown`；表中的
+> rho/NMSE 是训练中观察到的 test 最优值。另：STNet 的 `Decoder.fc` 未被前向
+> 使用（实际使用 `dense_layers`），但当前参数统计会计入；CR=1/4 时记录 3.18M，
+> 有效参数约 2.12M，论文报告复杂度时应扣除死参数。
 
 > **选择策略**：baseline 默认 `select_best: "all"`，即按测试集指标保存最优
 > checkpoint。新 idea 推荐使用 `select_best: "val_loss"`，只用验证集选模型。

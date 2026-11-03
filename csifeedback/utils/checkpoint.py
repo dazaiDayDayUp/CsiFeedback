@@ -9,7 +9,12 @@ import torch
 from csifeedback.utils.config import ExperimentConfig, config_to_dict
 
 
-__all__ = ["save_checkpoint", "load_checkpoint", "Checkpoint"]
+__all__ = [
+    "save_checkpoint",
+    "load_checkpoint",
+    "load_model_state_dict",
+    "Checkpoint",
+]
 
 
 class Checkpoint(Dict[str, Any]):
@@ -61,7 +66,9 @@ def save_checkpoint(
     extra: Optional[Dict[str, Any]] = None,
 ) -> None:
     """保存包含完整元信息的统一格式检查点。"""
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    directory = os.path.dirname(path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
     checkpoint: Dict[str, Any] = {
         "epoch": epoch,
         "model_name": model_name,
@@ -84,3 +91,20 @@ def load_checkpoint(path: str, map_location: Optional[str] = None) -> Checkpoint
         raise FileNotFoundError(f"检查点不存在：{path}")
     ckpt = torch.load(path, map_location=map_location, weights_only=False)
     return Checkpoint(ckpt)
+
+
+def load_model_state_dict(
+    model: torch.nn.Module,
+    state_dict: Dict[str, Any],
+    strict: bool = True,
+) -> None:
+    """把模型状态加载到模型。
+
+    兼容普通扁平 ``state_dict`` 与 STNet 训练器保存的
+    ``{"encoder": ..., "decoder": ...}`` 嵌套格式。
+    """
+    if isinstance(state_dict, dict) and {"encoder", "decoder"} <= set(state_dict):
+        model.load_encoder_state(state_dict["encoder"], strict=strict)
+        model.load_decoder_state(state_dict["decoder"], strict=strict)
+        return
+    model.load_state_dict(state_dict, strict=strict)
