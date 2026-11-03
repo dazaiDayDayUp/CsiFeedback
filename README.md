@@ -161,7 +161,8 @@ python scripts/compare.py --latest --min-epochs 100
 │   ├── baselines.md             # baseline 协议与参考结果
 │   ├── architecture.md          # baseline 网络结构
 │   ├── paper_checklist.md       # 论文级实验与写作清单
-│   └── ideas/TEMPLATE.md        # idea 记录模板
+│   ├── ideas/TEMPLATE.md        # idea 记录模板
+│   └── survey/                  # CSI 反馈文献调研（分类、时间线、可比性）
 ├── AGENTS.md                    # 所有 coding agent 的统一协作说明
 └── README.md
 ```
@@ -337,6 +338,7 @@ export CUDA_VISIBLE_DEVICES=0
 - [`docs/baselines.md`](docs/baselines.md) —— baseline 协议、参考结果与完整性规则
 - [`docs/architecture.md`](docs/architecture.md) —— 三个 baseline 的网络结构
 - [`docs/paper_checklist.md`](docs/paper_checklist.md) —— 论文级实验与写作清单
+- [`docs/survey/README.md`](docs/survey/README.md) —— CSI 反馈文献调研索引与总览
 - [`AGENTS.md`](AGENTS.md) —— coding agent 协作说明
 
 ## 引用
