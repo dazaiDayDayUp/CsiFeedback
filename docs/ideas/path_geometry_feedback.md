@@ -48,6 +48,35 @@ rank-2 占 97.4%；outdoor 更弥散（rank-1 约 59.3%，rank-2 约 79.0%）。
 - 两阶段训练：前 150 epoch 只训练路径分支（残差分支不参与损失），
   之后联合训练最终重建与路径辅助重建，让 specular 几何先学会、diffuse 残差再补足。
 
+### 形式化
+
+码字 `c = [p_1..p_K, r]`，每条径 `p_k=(f_a,k, f_d,k, g_k^R, g_k^I)`，
+`r` 是 `M-4K` 维漫散射残差。
+
+角度/时延的截断 DFT 核：
+
+```text
+D_a(n; f_a) = (1/N_a) Σ_{l=0}^{N_a-1} exp(j2π(f_a - n/N_a)l),  N_a=32
+D_d(m; f_d) = (1/N_d) Σ_{l=0}^{N_d-1} exp(j2π(f_d - m/N_d)l),  N_d=1024, m=0..31
+H_path(a,d) = Σ_k g_k D_a(a; f_a,k) D_d(d; f_d,k)
+H_hat = 0.5 + H_path + H_residual
+```
+
+训练目标（residual_main）：
+
+```text
+L = ||H_hat - H||² + λ_aux(s) [L_heat + L_gain + L_match]
+```
+
+`λ_aux(s)` 在前 20 epoch 为全权重，随后 30 epoch 线性退到 0；`λ_path=0`，
+最终重建 MSE 主导，路径分支只通过物理辅助损失和最终输出获得梯度。
+
+## 复杂度
+
+- CR=1/4：1.14M 参数（STNet 有效约 2.125M，CLNet/CsiNet 约 2.10M）。
+- thop 统计约 178M FLOPs，主要来自 Dirichlet 核合成和残差解码器；该数值
+  与 baseline 的统计口径不同，论文中应统一工具或同时报告实测时延。
+
 ## 与近邻工作的区别
 
 - HS-PINNnet 输出多径参数，但主要做参数化重建；这里显式保留漫散射残差码字，
