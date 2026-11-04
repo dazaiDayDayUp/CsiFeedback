@@ -150,6 +150,25 @@ stage 2 的残差分支没有接上，训练不稳定。同期 STNet epoch 300 �
 | delay32 | 把 delay 核换回 32 点 Dirichlet（物理建模消融，`residual_main_delay32`） |
 | noaux | 去掉热图/增益/token 匹配辅助损失（`residual_main_noaux`） |
 
+### 2026-11-05 GPU residual_main 300-epoch 结果（决定性负结果）
+
+运行目录：`experiments/path_geometry_feedback/indoor_cr4/20261105_062003`。
+
+| 指标 | 值 |
+|------|----|
+| best test NMSE（epoch 290） | **-20.398 dB** |
+| best rho | 0.99274 |
+| last epoch 300 NMSE | -20.167 dB |
+| STNet 固定 checkpoint | **-30.174 dB / 0.99669** |
+| STNet 同期 epoch 300 | -26.67 dB |
+
+结论：residual_main 在 300 epoch 落后 STNet 固定 checkpoint 约 **9.8 dB**、落后同期
+约 6.5 dB。STNet 从 300 到 1000 epoch 通常再提升约 3.5 dB，即使 PGF 也提升同样幅度，
+仍无法接近 STNet。PGF 的 4×4 潜变量残差分支显著弱于 STNet 的窗口/全局注意力，
+路径分支的物理辅助不足以弥补。该 idea 不作为 SOTA 路线继续；1000-epoch full run
+不推荐。恢复研究后应转向 `angle_delay_equivariant` / `angular_spectral_feedback`
+或新 idea。
+
 ## 论文证据清单
 
 - [x] 同一 `data/`、同一 train/val/test、同一 `compute_nmse` / `compute_rho`
