@@ -64,7 +64,26 @@ csifeedback/configs/ideas/path_geometry_feedback/path_geometry_feedback_indoor_c
 
 ## 结果
 
-待填。
+### 2026-11-04 两阶段 screening（indoor CR4，300 epoch，提前停止）
+
+运行目录：`experiments/path_geometry_feedback/indoor_cr4/20261104_232336`。
+
+| epoch | 阶段 | test NMSE (dB) | rho |
+|------:|------|---------------:|----:|
+| 10 | path only | -5.00 | 0.858 |
+| 50 | path only | -6.01 | 0.891 |
+| 90 | path only | -5.75 | 0.882 |
+| 100 | stage 2 开始 | -3.25 | 0.746 |
+| 110 | stage 2 | -6.01 | 0.888 |
+| 120 | stage 2 | -4.08 | 0.825 |
+
+诊断：热图 top-K 与目标峰重合 95%；单样本纯路径 -5.6 dB，接近该样本
+top-8 系数 oracle -6.9 dB，说明路径分支已接近 K=8 上界。瓶颈是弥散残差，
+stage 2 的残差分支没有接上，训练不稳定。同期 STNet epoch 300 为 -26.67 dB，
+当前配方明显不可用。
+
+下一步：跑 joint 训练（`path_pretrain_epochs=0`），让残差从 epoch 1 参与；
+若仍失败，记录负结果并转向 angle_delay_equivariant 或其他新 idea。
 
 ## 消融计划
 
