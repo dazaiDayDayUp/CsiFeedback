@@ -19,6 +19,18 @@ rank-2 占 97.4%；outdoor 更弥散（rank-1 约 59.3%，rank-2 约 79.0%）。
 > 合成 rank-one 多径，再用一个小残差分支补偿漫散射，可以在相同码字预算下
 > 比纯网格卷积/注意力获得更好的低压缩比重建。
 
+## 误差分析（STNet CR=1/4）
+
+对 STNet `best_nmse.pth` 做逐样本分析（20000 test）：
+
+- indoor：worst 10% 样本的 rank2 能量 0.950（best 10% 为 0.997），
+  delay entropy 1.674（best 10% 为 0.998）；rank2 与 NMSE 的 Spearman 为 -0.501。
+- outdoor：worst 10% 的 rank2 能量 0.721（best 10% 为 0.920），
+  delay entropy 2.861（best 10% 为 1.781）；rank2 相关 -0.429。
+
+结论：baseline 的难点是**弥散、低秩性弱、时延扩展大**的信道，而不是强 specular
+样本。因此残差/漫散射分支是关键；本 idea 把残差解码器宽度从 64 加宽到 128。
+
 ## 方法
 
 - 编码器：卷积主干先在 16×16 特征上做多径峰值检测，上采样到 32×32，输出

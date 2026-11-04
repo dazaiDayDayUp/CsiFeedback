@@ -195,6 +195,7 @@ class _PathDecoder(nn.Module):
         output_activation: str = "identity",
         clamp_output: bool = True,
         delay_fft_size: int = 1024,
+        residual_width: int = 64,
     ):
         super().__init__()
         self.num_paths = num_paths
@@ -204,6 +205,7 @@ class _PathDecoder(nn.Module):
         self.output_activation = output_activation
         self.clamp_output = clamp_output
         self.delay_fft_size = delay_fft_size
+        self.residual_width = residual_width
 
         if self.residual_dim < 0:
             raise ValueError("num_paths * 4 不能超过 encoded_dim")
@@ -217,17 +219,18 @@ class _PathDecoder(nn.Module):
                     f"residual_dim={self.residual_dim} 不能被 latent_size^2={pixels} 整除"
                 )
             self.latent_channels = self.residual_dim // pixels
+            width = residual_width
             self.residual_decoder = nn.Sequential(
-                nn.ConvTranspose2d(self.latent_channels, 64, 4, stride=2, padding=1),
-                nn.BatchNorm2d(64),
+                nn.ConvTranspose2d(self.latent_channels, width, 4, stride=2, padding=1),
+                nn.BatchNorm2d(width),
                 nn.LeakyReLU(0.3, inplace=True),
-                nn.ConvTranspose2d(64, 64, 4, stride=2, padding=1),
-                nn.BatchNorm2d(64),
+                nn.ConvTranspose2d(width, width, 4, stride=2, padding=1),
+                nn.BatchNorm2d(width),
                 nn.LeakyReLU(0.3, inplace=True),
-                nn.ConvTranspose2d(64, 32, 4, stride=2, padding=1),
-                nn.BatchNorm2d(32),
+                nn.ConvTranspose2d(width, width // 2, 4, stride=2, padding=1),
+                nn.BatchNorm2d(width // 2),
                 nn.LeakyReLU(0.3, inplace=True),
-                nn.Conv2d(32, 2, kernel_size=3, padding=1),
+                nn.Conv2d(width // 2, 2, kernel_size=3, padding=1),
             )
             # 残差分支从零开始，先让物理路径分支主导重建。
             nn.init.zeros_(self.residual_decoder[-1].weight)
@@ -343,6 +346,7 @@ class PathGeometryFeedback(CSIAutoencoder):
         路径合成已经按复系数尺度输出，默认 ``identity``。
     :param clamp_output: 是否把最终输出裁剪到 [0, 1]；默认开启。
     :param delay_fft_size: 原始时延 DFT 点数；COST2100 为 1024，只保留前 32 个 tap。
+    :param residual_width: 漫散射残差解码器的通道宽度；默认 64。
     """
 
     def __init__(
@@ -355,6 +359,7 @@ class PathGeometryFeedback(CSIAutoencoder):
         output_activation: str = "identity",
         clamp_output: bool = True,
         delay_fft_size: int = 1024,
+        residual_width: int = 64,
         **kwargs,
     ):
         super().__init__()
@@ -380,6 +385,7 @@ class PathGeometryFeedback(CSIAutoencoder):
             output_activation=output_activation,
             clamp_output=clamp_output,
             delay_fft_size=delay_fft_size,
+            residual_width=residual_width,
         )
 
     @property
@@ -412,6 +418,7 @@ def create_path_geometry_feedback(
     output_activation: str = "identity",
     clamp_output: bool = True,
     delay_fft_size: int = 1024,
+    residual_width: int = 64,
     **kwargs,
 ) -> PathGeometryFeedback:
     return PathGeometryFeedback(
@@ -423,5 +430,6 @@ def create_path_geometry_feedback(
         output_activation=output_activation,
         clamp_output=clamp_output,
         delay_fft_size=delay_fft_size,
+        residual_width=residual_width,
         **kwargs,
     )
