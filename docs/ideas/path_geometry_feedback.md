@@ -93,6 +93,8 @@ stage 2 的残差分支没有接上，训练不稳定。同期 STNet epoch 300 �
 - full NMSE **-10.50 dB**，path-only -2.73 dB；
 - 对比 joint full -5.45 dB、两阶段 -3.68 dB：**最终 MSE 主导、路径只做辅助**
   明显更好。强迫路径分支重建（path_loss_weight=0.2）会伤害最终性能。
+- 2048 样本、30 epoch：full **-8.09 dB** / path -4.65 dB，说明配方在更大子集上
+  仍然有效，不是 512 样本过拟合。
 - 因此 GPU screening 改为 residual_main 配置：
   `path_pretrain_epochs=0`、`path_loss_weight=0`、aux 权重 0.05、退火 20/30。
 
