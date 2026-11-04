@@ -150,6 +150,20 @@ stage 2 的残差分支没有接上，训练不稳定。同期 STNet epoch 300 �
 | delay32 | 把 delay 核换回 32 点 Dirichlet（物理建模消融，`residual_main_delay32`） |
 | noaux | 去掉热图/增益/token 匹配辅助损失（`residual_main_noaux`） |
 
+## 论文证据清单
+
+- [x] 同一 `data/`、同一 train/val/test、同一 `compute_nmse` / `compute_rho`
+- [x] 配置、commit、`metrics.json`、docs 记录
+- [x] 参数量（CR4 1.14M）；FLOPs 已用 thop 测量但口径需统一
+- [x] 关键误差分析：baseline/PGF 的难样本都是低秩性弱、时延扩展大
+- [ ] residual_main base 1000 epoch（等待 GPU）
+- [ ] 与 STNet 同策略对比（`select_best: all`；seed 队列已准备）
+- [ ] 3 seeds 均值±标准差（PGF/STNet 队列已准备）
+- [ ] 核心消融：K4/K16、width64、delay32、noaux（配置已准备）
+- [ ] 完整 CR 矩阵（indoor/outdoor 队列已准备）
+- [ ] 参数量/FLOPs/实测时延的统一口径表
+- [ ] 论文方法图与公式（方法形式化已写入本文档）
+
 ## 运行命令
 
 ```bash
