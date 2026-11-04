@@ -82,8 +82,13 @@ top-8 系数 oracle -6.9 dB，说明路径分支已接近 K=8 上界。瓶颈是
 stage 2 的残差分支没有接上，训练不稳定。同期 STNet epoch 300 为 -26.67 dB，
 当前配方明显不可用。
 
-下一步：跑 joint 训练（`path_pretrain_epochs=0`），让残差从 epoch 1 参与；
-若仍失败，记录负结果并转向 angle_delay_equivariant 或其他新 idea。
+下一步（fallback 阶梯）：
+
+1. **joint**：`path_pretrain_epochs=0`，残差从 epoch 1 参与（已排队）。
+2. **residual_main**：`path_loss_weight=0`，最终 MSE 主导，路径分支只作为物理辅助
+   头（热图/增益/token 匹配），配置见
+   `ablations/pgf_indoor_cr4_residual_main.yaml`。
+3. 若两级都失败，记录负结果并转向 `angle_delay_equivariant` 或其他新 idea。
 
 ## 消融计划
 
