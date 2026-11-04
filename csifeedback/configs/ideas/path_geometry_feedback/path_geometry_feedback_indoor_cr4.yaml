@@ -17,6 +17,8 @@ model:
     heatmap_sigma: 0.7
     heatmap_pos_weight: 10.0
     code_loss_weight: 0.1
+    aux_loss_warmup: 50
+    aux_loss_decay: 100
 data:
   data_dir: "./data"
   scenario: "indoor"

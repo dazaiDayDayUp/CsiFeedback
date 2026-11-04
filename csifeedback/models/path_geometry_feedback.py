@@ -121,15 +121,8 @@ class _PathEncoder(nn.Module):
     ) -> torch.Tensor:
         n = heatmap.shape[0]
         probs = torch.softmax(heatmap.flatten(1), dim=1)  # (N, 1024)
-        probs2d = probs.view(n, 1, _GRID, _GRID)
-        # 3×3 NMS：避免 top-K 在同一个宽峰上重复取点。
-        local_max = F.max_pool2d(
-            probs2d, kernel_size=3, stride=1, padding=1
-        ).eq(probs2d)
-        masked = probs2d.masked_fill(~local_max, 0.0)
-        _, top_index = torch.topk(
-            masked.flatten(1), self.num_paths, dim=1
-        )
+        # 不做 NMS：同一 delay 上相邻角度可能是不同物理径，NMS 会误合并。
+        _, top_index = torch.topk(probs, self.num_paths, dim=1)
         angle0 = (top_index // _GRID).float()
         delay0 = (top_index % _GRID).float()
 

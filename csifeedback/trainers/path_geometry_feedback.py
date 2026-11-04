@@ -37,18 +37,15 @@ class PathGeometryFeedbackTrainer(DefaultTrainer):
             extra.get("heatmap_pos_weight", 10.0)
         )
         self.code_loss_weight = float(extra.get("code_loss_weight", 0.1))
+        self.aux_loss_warmup = int(extra.get("aux_loss_warmup", 50))
+        self.aux_loss_decay = int(extra.get("aux_loss_decay", 100))
 
     def _target_maps(self, x: torch.Tensor):
         n = x.shape[0]
         csi = (x[:, 0] - 0.5) + 1j * (x[:, 1] - 0.5)
-        magnitude = csi.abs()
-        # 目标峰也做 3×3 NMS，保证 K 个目标对应不同局部峰。
-        local_max = F.max_pool2d(
-            magnitude.unsqueeze(1), kernel_size=3, stride=1, padding=1
-        ).squeeze(1).eq(magnitude)
-        masked = magnitude.masked_fill(~local_max, -1.0)
+        magnitude = csi.abs().flatten(1)
         _, index = torch.topk(
-            masked.flatten(1), self.model.num_paths, dim=1
+            magnitude, self.model.num_paths, dim=1
         )
         angle0 = (index // 32).float()
         delay0 = (index % 32).float()
@@ -117,12 +114,8 @@ class PathGeometryFeedbackTrainer(DefaultTrainer):
         num_paths = self.model.num_paths
         pred = code[:, : num_paths * 4].view(-1, num_paths, 4)
         csi = (x[:, 0] - 0.5) + 1j * (x[:, 1] - 0.5)
-        magnitude = csi.abs()
-        local_max = F.max_pool2d(
-            magnitude.unsqueeze(1), kernel_size=3, stride=1, padding=1
-        ).squeeze(1).eq(magnitude)
-        masked = magnitude.masked_fill(~local_max, -1.0)
-        _, index = torch.topk(masked.flatten(1), num_paths, dim=1)
+        magnitude = csi.abs().flatten(1)
+        _, index = torch.topk(magnitude, num_paths, dim=1)
         target = torch.stack(
             (
                 (index // 32).float() / 32.0,
@@ -143,6 +136,15 @@ class PathGeometryFeedbackTrainer(DefaultTrainer):
             + F.mse_loss(matched[..., 3], target[..., 3])
         )
 
+    def _aux_scale(self) -> float:
+        epoch = self.epoch
+        end = self.aux_loss_warmup + self.aux_loss_decay
+        if epoch < self.aux_loss_warmup:
+            return 1.0
+        if epoch < end:
+            return (end - epoch) / max(1, self.aux_loss_decay)
+        return 0.0
+
     def _train_step(self, x):
         self.optimizer.zero_grad()
         code, heatmap, gain_map = self.model.encoder(
@@ -159,14 +161,15 @@ class PathGeometryFeedbackTrainer(DefaultTrainer):
                 path_out, x
             )
 
-        heat_loss, gain_loss = self._aux_losses(x, heatmap, gain_map)
-        code_loss = self._code_alignment_loss(x, code)
-        loss = (
-            loss
-            + self.heatmap_loss_weight * heat_loss
-            + self.gain_loss_weight * gain_loss
-            + self.code_loss_weight * code_loss
-        )
+        aux_scale = self._aux_scale()
+        if aux_scale > 0:
+            heat_loss, gain_loss = self._aux_losses(x, heatmap, gain_map)
+            code_loss = self._code_alignment_loss(x, code)
+            loss = loss + aux_scale * (
+                self.heatmap_loss_weight * heat_loss
+                + self.gain_loss_weight * gain_loss
+                + self.code_loss_weight * code_loss
+            )
         loss.backward()
         self.optimizer.step()
         if self.scheduler is not None:
