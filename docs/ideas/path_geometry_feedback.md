@@ -95,6 +95,10 @@ stage 2 的残差分支没有接上，训练不稳定。同期 STNet epoch 300 �
   明显更好。强迫路径分支重建（path_loss_weight=0.2）会伤害最终性能。
 - 2048 样本、30 epoch：full **-8.09 dB** / path -4.65 dB，说明配方在更大子集上
   仍然有效，不是 512 样本过拟合。
+- 在 2048 个 held-out test 样本上逐样本分析：full -7.47 dB / path -4.84 dB，
+  残差分支平均贡献约 2.6 dB。full 的难样本仍是低秩性弱、时延扩展大的样本
+  （rank2 Spearman -0.582，delay entropy +0.421），说明残差分支有帮助但
+  没有完全解决弥散样本；最终性能需要 100k 全量 training 验证。
 - 因此 GPU screening 改为 residual_main 配置：
   `path_pretrain_epochs=0`、`path_loss_weight=0`、aux 权重 0.05、退火 20/30。
 
