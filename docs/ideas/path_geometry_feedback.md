@@ -82,6 +82,12 @@ top-8 系数 oracle -6.9 dB，说明路径分支已接近 K=8 上界。瓶颈是
 stage 2 的残差分支没有接上，训练不稳定。同期 STNet epoch 300 为 -26.67 dB，
 当前配方明显不可用。
 
+### joint CPU 诊断（512 样本，60 epoch）
+
+- full NMSE **-5.45 dB**，path-only -3.86 dB；
+- 对比两阶段同规模 full -3.68 dB：joint 更好，残差分支确实能贡献约 1.6 dB；
+- 因此 GPU joint screening 优先于继续调两阶段。
+
 下一步（fallback 阶梯）：
 
 1. **joint**：`path_pretrain_epochs=0`，残差从 epoch 1 参与（已排队）。
