@@ -115,11 +115,11 @@ stage 2 的残差分支没有接上，训练不稳定。同期 STNet epoch 300 �
 
 | 变体 | 说明 |
 |------|------|
-| full | 路径 + 残差 |
-| path only | 去掉残差分支 |
-| grid kernel | 用最近网格点代替离格 Dirichlet 核 |
-| no aux loss | 去掉路径辅助损失 |
-| K sweep | K = 2 / 4 / 8 / 16 |
+| full (residual_main) | 最终 MSE 主导；K=8、width=128、delay_fft=1024、aux 全开 |
+| K=4 / K=16 | 路径容量消融（`residual_main_k4/k16`） |
+| width=64 | 残差解码器宽度消融（`residual_main_width64`） |
+| delay32 | 把 delay 核换回 32 点 Dirichlet（物理建模消融，`residual_main_delay32`） |
+| noaux | 去掉热图/增益/token 匹配辅助损失（`residual_main_noaux`） |
 
 ## 运行命令
 
