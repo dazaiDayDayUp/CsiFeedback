@@ -11,6 +11,7 @@ from csifeedback.trainers.base import BaseTrainer
 from csifeedback.trainers.clnet import CLNetTrainer
 from csifeedback.trainers.csinet import CsiNetTrainer
 from csifeedback.trainers.default import DefaultTrainer
+from csifeedback.trainers.path_geometry_feedback import PathGeometryFeedbackTrainer
 from csifeedback.trainers.stnet import STNetTrainer
 from csifeedback.utils.config import ExperimentConfig
 from csifeedback.utils.logging import get_logger
@@ -23,6 +24,7 @@ __all__ = [
     "CLNetTrainer",
     "STNetTrainer",
     "CsiNetTrainer",
+    "PathGeometryFeedbackTrainer",
 ]
 
 
@@ -30,6 +32,7 @@ _TRAINER_MAP = {
     "clnet": CLNetTrainer,
     "stnet": STNetTrainer,
     "csinet": CsiNetTrainer,
+    "path_geometry_feedback": PathGeometryFeedbackTrainer,
 }
 
 

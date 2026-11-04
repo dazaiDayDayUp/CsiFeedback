@@ -22,6 +22,10 @@ from csifeedback.models.registry import (
 # baseline 模型：导入模块即完成注册。
 from csifeedback.models.clnet import CLNet, create_clnet
 from csifeedback.models.csinet import CsiNet, create_csinet
+from csifeedback.models.path_geometry_feedback import (
+    PathGeometryFeedback,
+    create_path_geometry_feedback,
+)
 from csifeedback.models.stnet import STNet, create_stnet
 
 
@@ -30,9 +34,11 @@ __all__ = [
     "CLNet",
     "STNet",
     "CsiNet",
+    "PathGeometryFeedback",
     "create_clnet",
     "create_stnet",
     "create_csinet",
+    "create_path_geometry_feedback",
     "register_model",
     "get_model",
     "get_model_from_config",
