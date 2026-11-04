@@ -92,6 +92,10 @@ class _PathEncoder(nn.Module):
         # 小初始化让路径增益从零附近开始，训练更稳定。
         nn.init.normal_(self.path_head[-1].weight, std=0.01)
         nn.init.zeros_(self.path_head[-1].bias)
+        # delay 的 sigmoid(0)=0.5 对应第 512 个 tap，落在保留的 32 tap 窗口外，
+        # 会让所有路径核恒为零。把 delay bias 拉到窗口内（约第 18 个 tap）。
+        with torch.no_grad():
+            self.path_head[-1].bias.view(num_paths, 4)[:, 1] = -4.0
 
         if residual_dim > 0:
             pixels = latent_size * latent_size
@@ -133,6 +137,7 @@ class _PathDecoder(nn.Module):
         num_paths: int,
         latent_size: int = 4,
         output_activation: str = "tanh",
+        delay_fft_size: int = 1024,
     ):
         super().__init__()
         self.num_paths = num_paths
@@ -140,12 +145,12 @@ class _PathDecoder(nn.Module):
         self.residual_dim = encoded_dim - self.path_dim
         self.latent_size = latent_size
         self.output_activation = output_activation
+        self.delay_fft_size = delay_fft_size
 
         if self.residual_dim < 0:
             raise ValueError("num_paths * 4 不能超过 encoded_dim")
-
-        self.register_buffer("_grid_index", torch.arange(_GRID, dtype=torch.float32))
-        self.register_buffer("_sum_index", torch.arange(_GRID, dtype=torch.float32))
+        if self.delay_fft_size < _GRID:
+            raise ValueError("delay_fft_size 不能小于 32")
 
         if self.residual_dim > 0:
             pixels = latent_size * latent_size
@@ -174,18 +179,35 @@ class _PathDecoder(nn.Module):
             self.residual_decoder = None
 
     def _dirichlet(
-        self, freq: torch.Tensor
+        self, freq: torch.Tensor, grid_size: int, fft_size: int
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """返回一维离格 Dirichlet 核的实部/虚部。
 
-        ``freq`` 形状为 ``(N, K)``，取值在 (0, 1)。返回 ``(N, K, 32)``。
-        定义为 ``sum_{k=0}^{31} exp(j 2π (freq - n/32) k) / 32``。
+        ``freq`` 形状为 ``(N, K)``，取值在 (0, 1)。返回 ``(N, K, grid_size)``。
+        定义为 ``sum_{n=0}^{fft_size-1} exp(j 2π (freq - m/fft_size) n) / fft_size``，
+        其中 ``m`` 是保留的网格下标。
+
+        对角度域，``fft_size = 32``（32 根天线全保留）；对时延域，
+        ``fft_size = 1024``（只保留前 32 个 delay tap），因此两者不是同一个核。
+        用闭式 Dirichlet 公式避免按 1024 点求和。
         """
-        n = self._grid_index.view(1, 1, 1, _GRID)
-        k = self._sum_index.view(1, 1, _GRID, 1)
-        phase = _TWO_PI * (freq.unsqueeze(-1).unsqueeze(-1) - n / _GRID) * k
-        real = torch.cos(phase).sum(dim=-1) / _GRID
-        imag = torch.sin(phase).sum(dim=-1) / _GRID
+        grid = torch.arange(
+            grid_size, device=freq.device, dtype=freq.dtype
+        ).view(1, 1, grid_size)
+        delta = freq.unsqueeze(-1) - grid / fft_size
+
+        denom = fft_size * torch.sin(math.pi * delta)
+        numer = torch.sin(math.pi * fft_size * delta)
+        eps = 1e-6
+        small = denom.abs() < eps
+        safe_denom = torch.where(small, torch.ones_like(denom), denom)
+        magnitude = torch.where(
+            small, torch.ones_like(delta), numer / safe_denom
+        )
+
+        phase = math.pi * (fft_size - 1) * delta
+        real = magnitude * torch.cos(phase)
+        imag = magnitude * torch.sin(phase)
         return real, imag
 
     def _synthesize_paths(
@@ -196,17 +218,19 @@ class _PathDecoder(nn.Module):
         gain_real = path_params[..., 2]
         gain_imag = path_params[..., 3]
 
-        angle_real, angle_imag = self._dirichlet(angle)
-        delay_real, delay_imag = self._dirichlet(delay)
+        angle_real, angle_imag = self._dirichlet(angle, _GRID, _GRID)
+        delay_real, delay_imag = self._dirichlet(
+            delay, _GRID, self.delay_fft_size
+        )
 
-        # 二维核 = delay 核与 angle 核的外积。
+        # 数据布局为 (angle, delay)：第一空间维是天线/角度，第二维是子载波/时延。
         kernel_real = (
-            delay_real.unsqueeze(-1) * angle_real.unsqueeze(-2)
-            - delay_imag.unsqueeze(-1) * angle_imag.unsqueeze(-2)
+            angle_real.unsqueeze(-1) * delay_real.unsqueeze(-2)
+            - angle_imag.unsqueeze(-1) * delay_imag.unsqueeze(-2)
         )
         kernel_imag = (
-            delay_real.unsqueeze(-1) * angle_imag.unsqueeze(-2)
-            + delay_imag.unsqueeze(-1) * angle_real.unsqueeze(-2)
+            angle_real.unsqueeze(-1) * delay_imag.unsqueeze(-2)
+            + angle_imag.unsqueeze(-1) * delay_real.unsqueeze(-2)
         )
 
         g_r = gain_real.unsqueeze(-1).unsqueeze(-1)
@@ -251,6 +275,7 @@ class PathGeometryFeedback(CSIAutoencoder):
     :param latent_size: 残差特征图的空间尺寸；默认 4（4×4）。
     :param hidden_dim: 路径头隐藏维度。
     :param output_activation: ``tanh`` / ``sigmoid`` / ``hsigmoid``。
+    :param delay_fft_size: 原始时延 DFT 点数；COST2100 为 1024，只保留前 32 个 tap。
     """
 
     def __init__(
@@ -261,6 +286,7 @@ class PathGeometryFeedback(CSIAutoencoder):
         hidden_dim: int = 128,
         base_channels: int = 64,
         output_activation: str = "tanh",
+        delay_fft_size: int = 1024,
         **kwargs,
     ):
         super().__init__()
@@ -283,6 +309,7 @@ class PathGeometryFeedback(CSIAutoencoder):
             num_paths=num_paths,
             latent_size=latent_size,
             output_activation=output_activation,
+            delay_fft_size=delay_fft_size,
         )
 
     @property
@@ -313,6 +340,7 @@ def create_path_geometry_feedback(
     hidden_dim: int = 128,
     base_channels: int = 64,
     output_activation: str = "tanh",
+    delay_fft_size: int = 1024,
     **kwargs,
 ) -> PathGeometryFeedback:
     return PathGeometryFeedback(
@@ -322,5 +350,6 @@ def create_path_geometry_feedback(
         hidden_dim=hidden_dim,
         base_channels=base_channels,
         output_activation=output_activation,
+        delay_fft_size=delay_fft_size,
         **kwargs,
     )

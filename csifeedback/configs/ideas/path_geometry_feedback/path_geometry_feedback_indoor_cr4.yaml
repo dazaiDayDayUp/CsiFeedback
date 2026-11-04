@@ -7,6 +7,7 @@ model:
     hidden_dim: 128
     base_channels: 64
     output_activation: "tanh"
+    delay_fft_size: 1024
     path_loss_weight: 0.2
 data:
   data_dir: "./data"
