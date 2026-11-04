@@ -54,7 +54,8 @@ def test_path_gradient_flows():
     loss.backward()
     grads = [
         p.grad.abs().sum().item()
-        for p in model.encoder.path_head.parameters()
+        for module in (model.encoder.heatmap_head, model.encoder.gain_head)
+        for p in module.parameters()
         if p.grad is not None
     ]
     assert sum(grads) > 0

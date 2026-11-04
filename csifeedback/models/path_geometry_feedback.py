@@ -56,7 +56,12 @@ class _ConvBN(nn.Sequential):
 
 
 class _PathEncoder(nn.Module):
-    """共享卷积主干 + 路径头 + 残差头。"""
+    """共享卷积主干 + 多径峰值热图检测 + 残差头。
+
+    编码器在 32×32 角度-时延网格上输出一张峰值热图和一张复增益图；
+    取热图 top-K 峰值，并在每个峰值周围做 3×3 soft-argmax 得到连续角度/时延。
+    这样峰值定位由稠密热图负责，比全局回归坐标精确得多。
+    """
 
     def __init__(
         self,
@@ -65,11 +70,13 @@ class _PathEncoder(nn.Module):
         latent_size: int = 4,
         hidden_dim: int = 128,
         base_channels: int = 64,
+        delay_fft_size: int = 1024,
     ):
         super().__init__()
         self.num_paths = num_paths
         self.residual_dim = residual_dim
         self.latent_size = latent_size
+        self.delay_fft_size = delay_fft_size
 
         c1 = base_channels
         c2 = base_channels + 32
@@ -81,21 +88,22 @@ class _PathEncoder(nn.Module):
         self.down2 = _ConvBN(c2, c3, 4, stride=2, padding=1)
         self.down3 = _ConvBN(c3, c4, 4, stride=2, padding=1)
 
-        self.pool = nn.AdaptiveAvgPool2d(1)
-        self.path_head = nn.Sequential(
-            nn.Linear(c4, hidden_dim),
-            nn.GELU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.GELU(),
-            nn.Linear(hidden_dim, num_paths * 4),
+        # 16×16 特征上采样到 32×32，输出峰值热图与复增益图。
+        self.path_decoder = nn.Sequential(
+            nn.Conv2d(c2, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.3, inplace=True),
+            nn.ConvTranspose2d(64, 64, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.3, inplace=True),
         )
-        # 小初始化让路径增益从零附近开始，训练更稳定。
-        nn.init.normal_(self.path_head[-1].weight, std=0.01)
-        nn.init.zeros_(self.path_head[-1].bias)
-        # delay 的 sigmoid(0)=0.5 对应第 512 个 tap，落在保留的 32 tap 窗口外，
-        # 会让所有路径核恒为零。把 delay bias 拉到窗口内（约第 18 个 tap）。
-        with torch.no_grad():
-            self.path_head[-1].bias.view(num_paths, 4)[:, 1] = -4.0
+        self.heatmap_head = nn.Conv2d(64, 1, kernel_size=1)
+        self.gain_head = nn.Conv2d(64, 2, kernel_size=1)
+
+        offsets = [(da, dd) for da in (-1, 0, 1) for dd in (-1, 0, 1)]
+        self.register_buffer(
+            "_offsets", torch.tensor(offsets, dtype=torch.float32)
+        )
 
         if residual_dim > 0:
             pixels = latent_size * latent_size
@@ -108,24 +116,71 @@ class _PathEncoder(nn.Module):
         else:
             self.residual_head = None
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        feat = self.stem(x)
-        feat = self.down1(feat)
-        feat = self.down2(feat)
+    def _extract_paths(
+        self, heatmap: torch.Tensor, gain_map: torch.Tensor
+    ) -> torch.Tensor:
+        n = heatmap.shape[0]
+        probs = torch.softmax(heatmap.flatten(1), dim=1)  # (N, 1024)
+        _, top_index = torch.topk(probs, self.num_paths, dim=1)
+        angle0 = (top_index // _GRID).float()
+        delay0 = (top_index % _GRID).float()
+
+        patches = F.unfold(
+            probs.view(n, 1, _GRID, _GRID), kernel_size=3, padding=1
+        )  # (N, 9, 1024)
+        patch = patches.gather(
+            2, top_index.unsqueeze(1).expand(-1, 9, -1)
+        )  # (N, 9, K)
+        weights = torch.softmax(patch, dim=1)
+
+        offsets = self._offsets  # (9, 2)
+        soft_angle = (
+            weights * (angle0.unsqueeze(1) + offsets[:, 0].view(1, 9, 1))
+        ).sum(dim=1)
+        soft_delay = (
+            weights * (delay0.unsqueeze(1) + offsets[:, 1].view(1, 9, 1))
+        ).sum(dim=1)
+
+        gain_patches = F.unfold(
+            gain_map, kernel_size=3, padding=1
+        )  # (N, 18, 1024)
+        gain_patch = gain_patches.gather(
+            2, top_index.unsqueeze(1).expand(-1, 18, -1)
+        ).view(n, 2, 9, self.num_paths)
+        gains = (gain_patch * weights.unsqueeze(1)).sum(dim=2)  # (N, 2, K)
+
+        path_code = torch.stack(
+            (
+                soft_angle / _GRID,
+                soft_delay / self.delay_fft_size,
+                gains[:, 0],
+                gains[:, 1],
+            ),
+            dim=-1,
+        )
+        return path_code.flatten(1)
+
+    def forward(
+        self, x: torch.Tensor, return_maps: bool = False
+    ):
+        feat16 = self.down1(self.stem(x))
+        feat = self.down2(feat16)
         feat = self.down3(feat)
 
-        raw = self.path_head(self.pool(feat).flatten(1))
-        raw = raw.view(-1, self.num_paths, 4)
-        angle = torch.sigmoid(raw[..., 0])
-        delay = torch.sigmoid(raw[..., 1])
-        gain = 0.5 * torch.tanh(raw[..., 2:4])
-        path_code = torch.stack((angle, delay, gain[..., 0], gain[..., 1]), dim=-1)
-        path_code = path_code.flatten(1)
+        path_feat = self.path_decoder(feat16)
+        heatmap = self.heatmap_head(path_feat)
+        gain_map = self.gain_head(path_feat)
+        path_code = self._extract_paths(heatmap, gain_map)
 
         if self.residual_head is None:
-            return path_code
-        residual_code = self.residual_head(feat).flatten(1)
-        return torch.cat((path_code, residual_code), dim=1)
+            code = path_code
+        else:
+            residual_code = self.residual_head(feat).flatten(1)
+            code = torch.cat((path_code, residual_code), dim=1)
+
+        if return_maps:
+            return code, heatmap, gain_map
+        return code
 
 
 class _PathDecoder(nn.Module):
@@ -315,6 +370,7 @@ class PathGeometryFeedback(CSIAutoencoder):
             latent_size=latent_size,
             hidden_dim=hidden_dim,
             base_channels=base_channels,
+            delay_fft_size=delay_fft_size,
         )
         self.decoder = _PathDecoder(
             encoded_dim=encoded_dim,
