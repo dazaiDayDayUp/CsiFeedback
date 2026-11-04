@@ -136,7 +136,8 @@ class _PathDecoder(nn.Module):
         encoded_dim: int,
         num_paths: int,
         latent_size: int = 4,
-        output_activation: str = "tanh",
+        output_activation: str = "identity",
+        clamp_output: bool = True,
         delay_fft_size: int = 1024,
     ):
         super().__init__()
@@ -145,6 +146,7 @@ class _PathDecoder(nn.Module):
         self.residual_dim = encoded_dim - self.path_dim
         self.latent_size = latent_size
         self.output_activation = output_activation
+        self.clamp_output = clamp_output
         self.delay_fft_size = delay_fft_size
 
         if self.residual_dim < 0:
@@ -240,18 +242,25 @@ class _PathDecoder(nn.Module):
         return path_real, path_imag
 
     def _activate(self, x: torch.Tensor) -> torch.Tensor:
-        if self.output_activation == "tanh":
-            return 0.5 + 0.5 * torch.tanh(x)
-        if self.output_activation == "sigmoid":
-            return torch.sigmoid(x)
-        if self.output_activation == "hsigmoid":
-            return F.relu6(x + 3.0) / 6.0
-        raise ValueError(f"未知输出激活：{self.output_activation}")
+        if self.output_activation == "identity":
+            out = x
+        elif self.output_activation == "tanh":
+            out = 0.5 + 0.5 * torch.tanh(x)
+        elif self.output_activation == "sigmoid":
+            out = torch.sigmoid(x)
+        elif self.output_activation == "hsigmoid":
+            out = F.relu6(x + 3.0) / 6.0
+        else:
+            raise ValueError(f"未知输出激活：{self.output_activation}")
+        if self.clamp_output:
+            out = torch.clamp(out, 0.0, 1.0)
+        return out
 
     def forward(self, code: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         path_params = code[:, : self.path_dim].view(-1, self.num_paths, 4)
         path_real, path_imag = self._synthesize_paths(path_params)
-        path_out = torch.stack((path_real, path_imag), dim=1)
+        # 路径合成的输出已经是 0.5 去中心后的复系数，直接加回 0.5。
+        path_out = torch.stack((path_real + 0.5, path_imag + 0.5), dim=1)
         path_out = self._activate(path_out)
 
         if self.residual_decoder is None:
@@ -262,7 +271,7 @@ class _PathDecoder(nn.Module):
         )
         residual = self.residual_decoder(residual)
         out = self._activate(
-            torch.stack((path_real, path_imag), dim=1) + residual
+            torch.stack((path_real, path_imag), dim=1) + residual + 0.5
         )
         return out, path_out
 
@@ -274,7 +283,9 @@ class PathGeometryFeedback(CSIAutoencoder):
     :param num_paths: 显式编码的多径条数，每条占 4 个实数（角度、时延、复增益）。
     :param latent_size: 残差特征图的空间尺寸；默认 4（4×4）。
     :param hidden_dim: 路径头隐藏维度。
-    :param output_activation: ``tanh`` / ``sigmoid`` / ``hsigmoid``。
+    :param output_activation: ``identity`` / ``tanh`` / ``sigmoid`` / ``hsigmoid``。
+        路径合成已经按复系数尺度输出，默认 ``identity``。
+    :param clamp_output: 是否把最终输出裁剪到 [0, 1]；默认开启。
     :param delay_fft_size: 原始时延 DFT 点数；COST2100 为 1024，只保留前 32 个 tap。
     """
 
@@ -285,7 +296,8 @@ class PathGeometryFeedback(CSIAutoencoder):
         latent_size: int = 4,
         hidden_dim: int = 128,
         base_channels: int = 64,
-        output_activation: str = "tanh",
+        output_activation: str = "identity",
+        clamp_output: bool = True,
         delay_fft_size: int = 1024,
         **kwargs,
     ):
@@ -309,6 +321,7 @@ class PathGeometryFeedback(CSIAutoencoder):
             num_paths=num_paths,
             latent_size=latent_size,
             output_activation=output_activation,
+            clamp_output=clamp_output,
             delay_fft_size=delay_fft_size,
         )
 
@@ -339,7 +352,8 @@ def create_path_geometry_feedback(
     latent_size: int = 4,
     hidden_dim: int = 128,
     base_channels: int = 64,
-    output_activation: str = "tanh",
+    output_activation: str = "identity",
+    clamp_output: bool = True,
     delay_fft_size: int = 1024,
     **kwargs,
 ) -> PathGeometryFeedback:
@@ -350,6 +364,7 @@ def create_path_geometry_feedback(
         hidden_dim=hidden_dim,
         base_channels=base_channels,
         output_activation=output_activation,
+        clamp_output=clamp_output,
         delay_fft_size=delay_fft_size,
         **kwargs,
     )
