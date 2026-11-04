@@ -41,8 +41,15 @@ class PathGeometryFeedbackTrainer(DefaultTrainer):
     def _target_maps(self, x: torch.Tensor):
         n = x.shape[0]
         csi = (x[:, 0] - 0.5) + 1j * (x[:, 1] - 0.5)
-        magnitude = csi.abs().flatten(1)
-        _, index = torch.topk(magnitude, self.model.num_paths, dim=1)
+        magnitude = csi.abs()
+        # 目标峰也做 3×3 NMS，保证 K 个目标对应不同局部峰。
+        local_max = F.max_pool2d(
+            magnitude.unsqueeze(1), kernel_size=3, stride=1, padding=1
+        ).squeeze(1).eq(magnitude)
+        masked = magnitude.masked_fill(~local_max, -1.0)
+        _, index = torch.topk(
+            masked.flatten(1), self.model.num_paths, dim=1
+        )
         angle0 = (index // 32).float()
         delay0 = (index % 32).float()
 
@@ -110,9 +117,12 @@ class PathGeometryFeedbackTrainer(DefaultTrainer):
         num_paths = self.model.num_paths
         pred = code[:, : num_paths * 4].view(-1, num_paths, 4)
         csi = (x[:, 0] - 0.5) + 1j * (x[:, 1] - 0.5)
-        _, index = torch.topk(
-            csi.abs().flatten(1), num_paths, dim=1
-        )
+        magnitude = csi.abs()
+        local_max = F.max_pool2d(
+            magnitude.unsqueeze(1), kernel_size=3, stride=1, padding=1
+        ).squeeze(1).eq(magnitude)
+        masked = magnitude.masked_fill(~local_max, -1.0)
+        _, index = torch.topk(masked.flatten(1), num_paths, dim=1)
         target = torch.stack(
             (
                 (index // 32).float() / 32.0,

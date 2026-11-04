@@ -10,7 +10,7 @@ model:
     clamp_output: true
     delay_fft_size: 1024
     path_loss_weight: 0.2
-    path_pretrain_epochs: 150
+    path_pretrain_epochs: 100
     path_pretrain_loss_weight: 1.0
     heatmap_loss_weight: 0.1
     gain_loss_weight: 0.1
