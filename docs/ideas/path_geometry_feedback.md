@@ -88,9 +88,18 @@ stage 2 的残差分支没有接上，训练不稳定。同期 STNet epoch 300 �
 - 对比两阶段同规模 full -3.68 dB：joint 更好，残差分支确实能贡献约 1.6 dB；
 - 因此 GPU joint screening 优先于继续调两阶段。
 
+### residual_main CPU 诊断（512 样本，60 epoch）
+
+- full NMSE **-10.50 dB**，path-only -2.73 dB；
+- 对比 joint full -5.45 dB、两阶段 -3.68 dB：**最终 MSE 主导、路径只做辅助**
+  明显更好。强迫路径分支重建（path_loss_weight=0.2）会伤害最终性能。
+- 因此 GPU screening 改为 residual_main 配置：
+  `path_pretrain_epochs=0`、`path_loss_weight=0`、aux 权重 0.05、退火 20/30。
+
 下一步（fallback 阶梯）：
 
-1. **joint**：`path_pretrain_epochs=0`，残差从 epoch 1 参与（已排队）。
+1. **residual_main**：最终 MSE 主导，路径作为物理辅助头（GPU 优先，已排队）。
+2. **joint**：`path_pretrain_epochs=0`，残差从 epoch 1 参与（已被 residual_main 取代）。
 2. **residual_main**：`path_loss_weight=0`，最终 MSE 主导，路径分支只作为物理辅助
    头（热图/增益/token 匹配），配置见
    `ablations/pgf_indoor_cr4_residual_main.yaml`。
