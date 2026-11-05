@@ -1,0 +1,32 @@
+model:
+  name: "cylinder_codec"
+  encoded_dim: 512
+  extra:
+    channels: 96
+    depth: 10
+data:
+  data_dir: "./data"
+  scenario: "indoor"
+  batch_size: 200
+  num_workers: 0
+  pin_memory: false
+  load_raw: true
+optimizer:
+  name: "adamw"
+  lr: 1.0e-3
+  betas: [0.9, 0.999]
+  weight_decay: 1.0e-4
+scheduler:
+  name: "cosine"
+  eta_min: 5.0e-5
+training:
+  epochs: 300
+  device: "auto"
+  seed: 0
+  val_freq: 10
+  test_freq: 10
+  print_freq: 600
+  checkpoint_dir: "./experiments"
+  checkpoint_freq: 0
+  resume: null
+  select_best: "val_loss"

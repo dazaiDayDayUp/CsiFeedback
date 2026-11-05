@@ -26,6 +26,7 @@ from csifeedback.models.stnet import STNet, create_stnet
 
 # 研究模型：同样导入即注册。
 from csifeedback.models.cylinder_codec import CylinderCodec, create_cylinder_codec
+from csifeedback.models.axis_codec import AxisCodec, create_axis_codec
 from csifeedback.models.controls import create_stnet_metric
 
 
@@ -38,7 +39,9 @@ __all__ = [
     "create_stnet",
     "create_csinet",
     "CylinderCodec",
+    "AxisCodec",
     "create_cylinder_codec",
+    "create_axis_codec",
     "create_stnet_metric",
     "register_model",
     "get_model",

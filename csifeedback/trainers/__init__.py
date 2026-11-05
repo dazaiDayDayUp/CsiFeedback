@@ -34,6 +34,7 @@ _TRAINER_MAP = {
     "stnet": STNetTrainer,
     "csinet": CsiNetTrainer,
     "cylinder_codec": CylinderCodecTrainer,
+    "axis_codec": CylinderCodecTrainer,
     "stnet_metric": STNetMetricTrainer,
 }
 
