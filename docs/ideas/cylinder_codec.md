@@ -590,7 +590,7 @@ PM-VQ、CSI-PPPNet 把稀疏、低秩、多径或统计先验写进链路。本�
 |---|---|---|---|---|
 | baseline | — | — | — | -28.984 |
 | `mse` | 训练目标（逐样本归一化 vs 逐元素 MSE） | `extra.loss: "mse"` | 略差，且差异集中在弱样本 | **-27.485（差 1.50 dB）** |
-| `densemix` | 角度轴循环卷积（圆群等变，32 参数）vs 稠密 32×32 | `extra.angle_mode: "dense"` | 参数×32，若更好说明「周期先验」不是收益来源 | 待跑 |
+| `densemix` | 角度轴循环卷积（圆群等变，32 参数）vs 稠密 32×32 | `extra.angle_mode: "dense"` | 稠密版参数 2.139M / 0.0303 GFLOPs（循环版 2.127M / 0.0219 G），若更好说明「周期先验」不是收益来源 | 待跑 |
 | `nobase` | 线性基座直达输出 | `extra.base_skip: false` | 明显更差（头部精度丢失） | 待跑 |
 | `nobypass` | 线性旁路（stem→输出的未归一化通路） | `extra.bypass: false` | 若更好，说明旁路只带来早期噪声 | 待跑 |
 | `bn` | 逐位置 LN vs 逐通道 BN | `extra.norm: "bn"` | 检验「LN 抹掉弱 tap 幅度」的假设 | 待跑 |
