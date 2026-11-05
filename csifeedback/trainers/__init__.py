@@ -7,6 +7,9 @@ baseline 模型使用各自的专用 trainer 以保持 baseline 训练行为；�
 import torch
 
 from csifeedback.models.base import CSIAutoencoder
+from csifeedback.trainers.angle_delay_equivariant import (
+    AngleDelayEquivariantTrainer,
+)
 from csifeedback.trainers.base import BaseTrainer
 from csifeedback.trainers.clnet import CLNetTrainer
 from csifeedback.trainers.csinet import CsiNetTrainer
@@ -23,6 +26,7 @@ __all__ = [
     "CLNetTrainer",
     "STNetTrainer",
     "CsiNetTrainer",
+    "AngleDelayEquivariantTrainer",
 ]
 
 
@@ -30,6 +34,7 @@ _TRAINER_MAP = {
     "clnet": CLNetTrainer,
     "stnet": STNetTrainer,
     "csinet": CsiNetTrainer,
+    "angle_delay_equivariant": AngleDelayEquivariantTrainer,
 }
 
 
