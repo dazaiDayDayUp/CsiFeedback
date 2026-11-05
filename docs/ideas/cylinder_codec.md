@@ -326,3 +326,56 @@ run `experiments/axis_codec/indoor_cr4/20261105_182644`，1000 epoch / 3.89 h /
 
 早期（epoch<700，学习率较高时）存在 ±2~4 dB 的偶发深谷（见 4.3 的曲线），
 由 `select_best: val_loss` 兜住；退火到低学习率后深谷消失。
+
+## 10. 论文方法草稿（可直接改写为 Method 节）
+
+### 10.1 表示流形的几何
+
+设 CSI 在角时延域表示为 $H\in\mathbb{C}^{N_a\times N_\tau}$，$N_a=N_\tau=32$。
+均匀线阵（ULA，半波长间距）的阵列流形为 $a_n(\theta)=e^{j\pi n\sin\theta}$，其
+$N_a$ 点 DFT 为 Dirichlet 核
+
+$$A_i(f)=\frac{\sin(\pi(f-i))}{\sin(\pi(f-i)/N_a)}\,e^{j\pi(N_a-1)(f-i)/N_a},\qquad f=\tfrac12\sin\theta\in[-\tfrac12,\tfrac12).$$
+
+因此**角度轴是周期为 1 的圆周**：bin 0 与 bin 31 是相邻的物理波束方向
+（实测 COST2100 indoor 在 bin 30/31 的能量回升到 0.026/0.037，直接印证回绕）。
+
+时延轴则相反：时延非负、能量沿 tap 单调衰减（实测 92.2% 能量集中在前 4 个 tap，
+其后近似几何衰减），且没有平移不变性。因此表示流形是「**角度圆周 × 时延半直线**」
+的半开圆柱。
+
+### 10.2 几何正确的算子
+
+- 角度混合器：DFT 域逐通道循环卷积。对特征 $x\in\mathbb{R}^{C\times N_a\times N_\tau}$，
+  沿角度轴取 $\hat x=\mathcal F_{N_a}x$，乘可学习滤波器 $w_c\in\mathbb C^{N_a/2+1}$
+  后反变换。它是**精确的圆群等变算子**（$T_s\,\mathrm{Mix}=\mathrm{Mix}\,T_s$，
+  $T_s$ 为角度循环平移），参数量仅 $32C$，而稠密线性需要 $N_a^2C$。
+- 时延混合器：沿时延轴的稠密线性映射 $W\in\mathbb{R}^{N_\tau\times N_\tau}$，
+  每个 tap 有独立读出头（对应「无平移不变性」）。
+- 归一化用 LayerNorm（逐位置、跨通道），并在编码器中保持 2 通道瓶颈。
+
+### 10.3 线性基座 + 非线性残差解码器
+
+$$\hat H=\underbrace{f_\text{lin}(z)}_{\text{线性基座}}+\underbrace{g_\theta(z)}_{\text{非线性残差}},\qquad
+\hat x=0.5+\hat H,$$
+
+其中 $z\in\mathbb R^D$ 为码字，$f_\text{lin}$ 是可学习线性映射（$2048\times D$），
+$g_\theta$ 是 §10.2 的圆柱算子主干。误差分解（§4.4）表明该结构把占 92% 能量的
+头部做到 $3.0\times10^{-5}$ 的相对误差（STNet 为 $3.7\times10^{-4}$），并把误差
+预算几乎全部（95.6%）让给时延尾部。
+
+### 10.4 目标函数与模型选择
+
+baseline 用逐元素 MSE 训练，但报告指标是逐用户归一化的 NMSE：
+
+$$\mathrm{NMSE}=\frac{1}{B}\sum_{i=1}^{B}\frac{\lVert \hat H_i-H_i\rVert_F^2}{\lVert H_i-0.5\rVert_F^2}.$$
+
+两者对样本的加权不同（MSE 按功率加权，NMSE 等权）。本文直接最小化上式（去掉
+$\log_{10}$），并**用同一指标在验证集上选 checkpoint**；MSE 消融臂也用该指标选
+checkpoint，使「训练目标」成为唯一变量。
+
+### 10.5 训练协议
+
+AdamW（lr $5\times10^{-4}$，wd $10^{-4}$）、cosine 退火到 $5\times10^{-5}$、
+warmup 30 epoch、batch 200、梯度裁剪 1.0、1000 epoch；与 baseline 完全相同的
+`data/` 文件、train/val/test 划分、`compute_nmse`/`compute_rho` 实现。
