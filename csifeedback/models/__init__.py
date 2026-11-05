@@ -24,6 +24,10 @@ from csifeedback.models.clnet import CLNet, create_clnet
 from csifeedback.models.csinet import CsiNet, create_csinet
 from csifeedback.models.stnet import STNet, create_stnet
 
+# 研究模型：同样导入即注册。
+from csifeedback.models.cylinder_codec import CylinderCodec, create_cylinder_codec
+from csifeedback.models.controls import create_stnet_metric
+
 
 __all__ = [
     "CSIAutoencoder",
@@ -33,6 +37,9 @@ __all__ = [
     "create_clnet",
     "create_stnet",
     "create_csinet",
+    "CylinderCodec",
+    "create_cylinder_codec",
+    "create_stnet_metric",
     "register_model",
     "get_model",
     "get_model_from_config",
