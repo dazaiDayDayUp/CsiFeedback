@@ -12,6 +12,7 @@ baseline 用逐元素 MSE 训练，但报告指标是
 import torch
 import torch.nn as nn
 
+from csifeedback.metrics.csi_metrics import compute_nmse
 from csifeedback.trainers.default import DefaultTrainer
 from csifeedback.trainers.stnet import STNetTrainer
 
@@ -53,6 +54,27 @@ class CylinderCodecTrainer(DefaultTrainer):
         else:
             raise ValueError(f"model.extra.loss 必须是 metric/mse，得到 {loss_name!r}")
         self.grad_clip = float(config.model.extra.get("grad_clip", 1.0))
+        # 选模型始终用逐样本归一化指标，即使训练目标是 MSE —— 保证目标函数消融只
+        # 改变训练信号，不改变 checkpoint 选择准则。
+        self.val_criterion = MetricMSELoss()
+
+    @torch.no_grad()
+    def _validate(self, val_loader):
+        self.model.eval()
+        total = 0.0
+        n_batches = 0
+        all_pred = []
+        all_gt = []
+        for batch in val_loader:
+            x = batch[0].to(self.device, non_blocking=True)
+            out = self.model(x)
+            total += self.val_criterion(out, x).item()
+            n_batches += 1
+            all_pred.append(out.cpu())
+            all_gt.append(x.cpu())
+        preds = torch.cat(all_pred, dim=0)
+        gts = torch.cat(all_gt, dim=0)
+        return total / max(1, n_batches), compute_nmse(preds, gts).item()
 
     def _train_step(self, x: torch.Tensor) -> float:
         self.optimizer.zero_grad()
