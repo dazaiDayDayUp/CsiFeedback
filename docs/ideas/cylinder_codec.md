@@ -667,3 +667,47 @@ epoch ≥ 400 后不再出现（最终阶段 run 内标准差 0.065-0.098 dB）�
 
 seed 差异主要体现在「瞬态崩塌发生在哪些 epoch」——两个 seed 的最优 epoch 分别为
 820 与 710，都是崩塌之外的好状态。
+
+## 18. 复现手册
+
+```bash
+conda activate csifeedback
+cd <repo>                      # 本分支 idea/cylinder_codec 的 worktree
+export CUDA_VISIBLE_DEVICES=0   # 单卡
+
+# 主结果（CR1/4，1000 epoch，seed 0/1/2；约 3-4 h/seed）
+python scripts/train.py \
+  --config csifeedback/configs/ideas/cylinder_codec/axis_codec_indoor_cr4_e1000.yaml \
+  -o data.data_dir=/path/to/data training.seed=0
+
+# 消融（300 epoch，与 300 epoch baseline 对齐）
+for cfg in mse densemix nobase nobypass bn ch16; do
+  python scripts/train.py \
+    --config csifeedback/configs/ideas/cylinder_codec/ablations/axis_codec_indoor_cr4_${cfg}.yaml \
+    -o data.data_dir=/path/to/data training.epochs=300
+done
+
+# 误差分解（复现头部 3.0e-5 / 尾部 7.6e-3）
+python scripts/analyze_errors.py \
+  --config csifeedback/configs/ideas/cylinder_codec/axis_codec_indoor_cr4.yaml \
+  --checkpoint experiments/axis_codec/indoor_cr4/<timestamp>/checkpoints/best_val.pth \
+  --data-dir /path/to/data --n 2000
+
+# 复杂度
+python - <<'PY'
+import torch
+from torch.utils.flop_counter import FlopCounterMode
+from csifeedback.models import get_model
+m = get_model("axis_codec", encoded_dim=512).eval()
+c = FlopCounterMode(display=False)
+with c, torch.no_grad(): m(torch.randn(1, 2, 32, 32))
+print(sum(p.numel() for p in m.parameters()) / 1e6, "M params", c.get_total_flops() / 1e9, "GFLOPs")
+PY
+```
+
+多 seed 汇总：`python seed_table.py --roots <worktree>/experiments --min-epochs 1000`
+（在 `CsiFeedback-research/` 下）。
+
+**注意**：所有实验必须保持 `data/` 文件、train/val/test 划分、`compute_nmse`/
+`compute_rho` 实现不变；新配置的 `training.select_best` 应保持 `val_loss`，
+否则与本文的比较不成立。
