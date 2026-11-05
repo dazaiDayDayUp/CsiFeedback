@@ -264,3 +264,15 @@ CylinderCodec（64 通道全分辨率卷积）在 CR1/4 是 **1.36 GFLOPs/样本
 **epoch 400 时 test -30.28 / val -30.37，已超过 STNet 的固定 checkpoint 复评值
 -30.174（rho 0.9966 vs 0.99669）**，且余弦学习率仍在 3.9e-4，还有 600 epoch 退火
 空间。验证集与测试集同步（差 0.09 dB），说明按 val 选模型不会引入测试集泄漏。
+
+
+## 9. 论点—证据映射（论文骨架）
+
+| # | 论点 | 证据（脚本/文件） | 状态 |
+|---|---|---|---|
+| C1 | 角时延表示是一个「半开圆柱」：角度轴是圆周、时延轴是半直线；把这一几何写成零参数硬约束（角度 DFT 循环混合 + 时延稠密混合）可以在**同量级算力**下达到 SOTA | `tests/test_axis_codec.py`（循环混合与角度平移严格对易）、`analysis/forensics.py`（bin 30/31 能量回绕 0.026/0.037）、`analysis/complexity.py`（2.13M/0.022G vs STNet 2.13M/0.014G）、densemix 消融 | 待消融 |
+| C2 | 报告指标（逐用户归一化 NMSE）与 baseline 训练的逐元素 MSE 对样本加权不同；直接优化前者能提升前者 | `MetricMSELoss` 与 `compute_nmse` 的一致性单测、mse 消融、`stnet_metric` 同目标对照 | 待消融 |
+| C3 | 误差由时延尾部主导（tap≥4 占 STNet 误差 68%、信号仅 7.9%），且尾部不可由头部解析延拓；因此正确做法是「线性基座 + 非线性残差」把头部做到 10^-5 量级、把全部预算投向尾部 | `analysis/error_decomposition.py`、`analyze_run.py`（头部相对误差 5.9e-5 vs STNet 3.7e-4）、`analysis/tail_predict.py` + `grid_continuation.py` + 头部→尾部脊回归（23% 方差） | 已完成 |
+| C4 | 紧凑参数化物理模型（路径/簇/谐波）在 COST2100 indoor 上不可行 | 单 Dirichlet 原子 -0.34 dB、谐波 r=1,m=16 -2.44 dB、2D 团块 k=4 -5.16 dB、最优线性预测器 0.767 尾部相对误差；独立复核 `analysis/verify_rate_distortion.json` / `verify_error_decomposition.json` | 已完成 |
+| C5 | 在 CR1/4 上超过最强 baseline（STNet）且差距大于种子波动 | 1000 epoch 曲线（epoch 440: -30.53，450: -30.58 vs STNet -30.174）、3 seed 均值±std | 进行中 |
+| C6 | 增益在高压缩比更明显 | CR1/8–1/64 的 top-k oracle 领先 STNet 1.5-3 dB（`analysis/rate_distortion_in.json`）+ CR 矩阵实验 | 待实验 |
