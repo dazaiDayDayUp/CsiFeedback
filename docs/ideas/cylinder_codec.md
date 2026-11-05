@@ -275,6 +275,8 @@ run `experiments/axis_codec/indoor_cr4/20261105_182644`，1000 epoch / 3.89 h /
 **NMSE -32.462 dB / rho 0.996847**（2000 样本复评 -32.481 / 0.996842）。
 
 对比 STNet 固定 checkpoint 复评（-30.174 / 0.996690）：**领先 2.29 dB**，rho +1.6e-4。
+即使与 STNet **论文报告值**（indoor CR1/4 = -31.81）相比仍领先 0.65 dB；
+CLNet 论文值 -29.16、CsiNet 论文值 -17.36。
 且我方完全不使用测试集选模型（baseline 的 `select_best: all` 反而用了测试集）。
 
 误差分解（2000 测试样本）：
