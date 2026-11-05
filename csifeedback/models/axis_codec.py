@@ -52,6 +52,20 @@ class LayerNorm2d(nn.Module):
         return x * self.weight.view(1, -1, 1, 1) + self.bias.view(1, -1, 1, 1)
 
 
+def make_norm(kind: str, channels: int) -> nn.Module:
+    """归一化层工厂。
+
+    ``ln``：逐位置通道 LayerNorm（抹掉每个空间位置的绝对幅度）；
+    ``bn``：BatchNorm2d（逐通道统计，保留空间幅度差异 —— 弱时延 tap 依赖这一信息）。
+    """
+    kind = kind.lower()
+    if kind == "ln":
+        return LayerNorm2d(channels)
+    if kind == "bn":
+        return nn.BatchNorm2d(channels)
+    raise ValueError(f"norm 必须是 ln/bn，得到 {kind!r}")
+
+
 class CircularMix(nn.Module):
     """角度轴循环卷积：DFT 域乘逐通道学到的滤波器（每通道 32 个自由参数）。"""
 
@@ -86,12 +100,13 @@ class DenseMix(nn.Module):
 class AxisBlock(nn.Module):
     """先角度轴（周期）混合，再时延轴（无对称性）混合，最后通道 MLP。"""
 
-    def __init__(self, channels: int, angle_mode: str = "circular", mlp_ratio: int = 2):
+    def __init__(self, channels: int, angle_mode: str = "circular", mlp_ratio: int = 2,
+                 norm: str = "ln"):
         super().__init__()
         if angle_mode not in {"circular", "dense"}:
             raise ValueError(f"angle_mode 必须是 circular/dense，得到 {angle_mode!r}")
         self.angle_mode = angle_mode
-        self.norm = LayerNorm2d(channels)
+        self.norm = make_norm(norm, channels)
         self.angle = (
             CircularMix(channels, _ANGLE) if angle_mode == "circular"
             else DenseMix(_ANGLE, axis=2)
@@ -101,7 +116,7 @@ class AxisBlock(nn.Module):
         self.mlp = nn.Sequential(
             nn.Conv2d(channels, hidden, 1), nn.GELU(), nn.Conv2d(hidden, channels, 1)
         )
-        self.norm2 = LayerNorm2d(channels)
+        self.norm2 = make_norm(norm, channels)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         h = self.norm(x)
@@ -115,7 +130,7 @@ class AxisBlock(nn.Module):
 
 class Encoder(nn.Module):
     def __init__(self, encoded_dim: int, channels: int = 8, depth: int = 8,
-                 angle_mode: str = "circular", pca_basis=None):
+                 angle_mode: str = "circular", pca_basis=None, norm: str = "ln"):
         super().__init__()
         if pca_basis is None:
             self.pca_basis = None
@@ -123,13 +138,13 @@ class Encoder(nn.Module):
             # persistent=False：不写入 state_dict，但会随 .to(device) 迁移
             self.register_buffer("pca_basis", pca_basis, persistent=False)
         self.stem = nn.Sequential(
-            nn.Conv2d(2, channels, 3, padding=1), LayerNorm2d(channels), nn.GELU()
+            nn.Conv2d(2, channels, 3, padding=1), make_norm(norm, channels), nn.GELU()
         )
         self.blocks = nn.ModuleList(
-            [AxisBlock(channels, angle_mode) for _ in range(depth)]
+            [AxisBlock(channels, angle_mode, norm=norm) for _ in range(depth)]
         )
         self.head = nn.Sequential(
-            LayerNorm2d(channels),
+            make_norm(norm, channels),
             nn.Conv2d(channels, channels, 1),
             nn.GELU(),
             nn.Conv2d(channels, 2, 1),
@@ -150,7 +165,7 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, encoded_dim: int, channels: int = 8, depth: int = 8,
                  angle_mode: str = "circular", output: str = "linear",
-                 bypass: bool = True, pca_basis=None):
+                 bypass: bool = True, pca_basis=None, norm: str = "ln"):
         super().__init__()
         if pca_basis is None:
             self.pca_basis = None
@@ -161,16 +176,16 @@ class Decoder(nn.Module):
         self.output = output
         self.fc = nn.Linear(encoded_dim, 2 * _ANGLE * _DELAY)
         self.stem = nn.Sequential(
-            nn.Conv2d(2, channels, 3, padding=1), LayerNorm2d(channels), nn.GELU()
+            nn.Conv2d(2, channels, 3, padding=1), make_norm(norm, channels), nn.GELU()
         )
         self.blocks = nn.ModuleList(
-            [AxisBlock(channels, angle_mode) for _ in range(depth)]
+            [AxisBlock(channels, angle_mode, norm=norm) for _ in range(depth)]
         )
         # 线性旁路：主干中的 LayerNorm2d 逐位置归一化会抹掉弱能量位置（时延尾部）
         # 的绝对幅度，旁路直接把 stem 特征线性映射到输出，保留幅度信息。
         self.bypass = nn.Conv2d(channels, 2, 1) if bypass else None
         self.head = nn.Sequential(
-            LayerNorm2d(channels),
+            make_norm(norm, channels),
             nn.Conv2d(channels, channels, 1),
             nn.GELU(),
             nn.Conv2d(channels, 2, 1),
@@ -206,6 +221,7 @@ class AxisCodec(CSIAutoencoder):
         output: str = "linear",
         bypass: bool = True,
         pca_path: str = "",
+        norm: str = "ln",
     ):
         super().__init__()
         self._encoded_dim = encoded_dim
@@ -218,9 +234,9 @@ class AxisCodec(CSIAutoencoder):
                     f"PCA 基形状 {tuple(basis.shape)} 与 encoded_dim={encoded_dim} 不匹配"
                 )
             self.register_buffer("pca_basis", basis, persistent=False)
-        self.encoder = Encoder(encoded_dim, channels, depth, angle_mode, basis)
+        self.encoder = Encoder(encoded_dim, channels, depth, angle_mode, basis, norm)
         self.decoder = Decoder(
-            encoded_dim, channels, depth, angle_mode, output, bypass, basis
+            encoded_dim, channels, depth, angle_mode, output, bypass, basis, norm
         )
         if basis is not None:
             self._zero_init_residuals()
@@ -260,6 +276,7 @@ def create_axis_codec(
     output: str = "linear",
     bypass: bool = True,
     pca_path: str = "",
+    norm: str = "ln",
     **kwargs,
 ) -> AxisCodec:
     """AxisCodec 工厂函数。"""
@@ -271,4 +288,5 @@ def create_axis_codec(
         output=output,
         bypass=bypass,
         pca_path=pca_path,
+        norm=norm,
     )
