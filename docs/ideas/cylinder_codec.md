@@ -170,3 +170,41 @@ CylinderCodec（64 通道全分辨率卷积）在 CR1/4 是 **1.36 GFLOPs/样本
 几何性质有单元测试保证（`tests/test_axis_codec.py`）：
 - 角度循环混合器与角度平移**严格对易**（圆群等变），且初始化为恒等滤波器；
 - 时延稠密混合器的作用域严格局限于同一角度位置。
+
+## 7. 论文素材（诊断驱动的叙事）
+
+### 7.1 中心论点
+
+现有 CSI 反馈论文把角时延域当作「稀疏图像」，用路径/簇参数化去压缩它。本文用
+可复现的 oracle 实验证明：**在 COST2100 上这条路线没有空间**（单原子 -0.34 dB、
+谐波 -2.44 dB、团块 -5.16 dB），真正决定 NMSE 的是
+
+1. **低压缩比接近线性子空间上限**（CR1/4：STNet 仅比 PCA-512 好 1 dB）；
+2. **误差集中在对角度的相对精度不敏感、但对时延尾部极敏感的 7.9% 能量上**
+   （尾部占 68-70% 误差，且不可由头部解析延拓）；
+3. **高压缩比的稳定 gap 来自「自由位置稀疏码」**（top-k oracle 领先 1.5-3 dB）。
+
+据此设计 AxisCodec：把表示流形的几何（角度圆周、时延半直线）写成零参数硬约束，
+把两条轴的不同对称性写成不同算子（循环卷积 vs 稠密线性），并用与报告指标完全
+一致的逐样本归一化目标训练。
+
+### 7.2 图表清单
+
+| 编号 | 内容 | 数据来源 |
+|---|---|---|
+| Fig.1 | 角时延图像的几何：平均能量图 + 角度回绕 + PDP 衰减 | `analysis/forensics.py` |
+| Fig.2 | 率失真 oracle：PCA / 低秩 / top-k / STNet vs CR | `analysis/rate_distortion.py` |
+| Fig.3 | 误差分解：按 tap 的误差 vs 信号能量；头部/尾部相对误差 | `analyze_run.py` |
+| Fig.4 | 解析延拓失败：最优线性预测器 vs STNet 尾部精度 | `analysis/tail_predict.py`, `grid_continuation.py` |
+| Fig.5 | 学到的角度循环滤波器频响（是否学出低通/带限结构） | 待训练后提取 |
+| Tab.1 | 复杂度：参数量 / 有效参数 / FLOPs | `analysis/complexity.py` |
+| Tab.2 | CR 矩阵 NMSE/rho（3 seed 均值±std，与 STNet 同目标对照） | 待训练 |
+| Tab.3 | 消融：circular vs dense angle mix、metric vs MSE、bypass、channels | 待训练 |
+
+### 7.3 可检验的预测
+
+- 若几何先验有效：`densemix` 消融应略差于 `circular`，且差异主要出现在
+  角度 bin 0/31 附近（可用误差分解验证）。
+- 若目标对齐有效：`mse` 消融应更差，且差异应集中在**弱样本**（低功率）上
+  （metric loss 相对 MSE 上权重 ∝ 1/power）。
+- 若旁路有效：`nobypass` 消融应在时延尾部误差上更差。
