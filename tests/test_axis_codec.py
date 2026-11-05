@@ -78,3 +78,16 @@ def test_block_keeps_shape():
     blk = AxisBlock(8)
     x = torch.randn(2, 8, 32, 32)
     assert blk(x).shape == x.shape
+
+
+def test_bypass_flag_changes_output_path():
+    """线性旁路开关必须真的改变前向路径（消融有效性）。"""
+    torch.manual_seed(0)
+    a = get_model("axis_codec", encoded_dim=512, bypass=True)
+    b = get_model("axis_codec", encoded_dim=512, bypass=False)
+    b.load_state_dict(a.state_dict(), strict=False)
+    x = torch.randn(2, 2, 32, 32)
+    with torch.no_grad():
+        ya, yb = a(x), b(x)
+    assert not torch.allclose(ya, yb)
+    assert ya.shape == yb.shape == x.shape

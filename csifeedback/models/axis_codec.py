@@ -140,7 +140,8 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
     def __init__(self, encoded_dim: int, channels: int = 8, depth: int = 8,
-                 angle_mode: str = "circular", output: str = "tanh"):
+                 angle_mode: str = "circular", output: str = "tanh",
+                 bypass: bool = True):
         super().__init__()
         if output not in {"tanh", "linear"}:
             raise ValueError(f"output 必须是 tanh/linear，得到 {output!r}")
@@ -152,6 +153,9 @@ class Decoder(nn.Module):
         self.blocks = nn.ModuleList(
             [AxisBlock(channels, angle_mode) for _ in range(depth)]
         )
+        # 线性旁路：主干中的 LayerNorm2d 逐位置归一化会抹掉弱能量位置（时延尾部）
+        # 的绝对幅度，旁路直接把 stem 特征线性映射到输出，保留幅度信息。
+        self.bypass = nn.Conv2d(channels, 2, 1) if bypass else None
         self.head = nn.Sequential(
             LayerNorm2d(channels),
             nn.Conv2d(channels, channels, 1),
@@ -162,9 +166,12 @@ class Decoder(nn.Module):
     def forward(self, z: torch.Tensor) -> torch.Tensor:
         h = self.fc(z).view(-1, 2, _ANGLE, _DELAY)
         h = self.stem(h)
+        skip = self.bypass(h) if self.bypass is not None else None
         for blk in self.blocks:
             h = blk(h)
         h = self.head(h)
+        if skip is not None:
+            h = h + skip
         if self.output == "tanh":
             return 0.5 + 0.5 * torch.tanh(h)
         return h + 0.5
@@ -180,11 +187,14 @@ class AxisCodec(CSIAutoencoder):
         depth: int = 8,
         angle_mode: str = "circular",
         output: str = "tanh",
+        bypass: bool = True,
     ):
         super().__init__()
         self._encoded_dim = encoded_dim
         self.encoder = Encoder(encoded_dim, channels, depth, angle_mode)
-        self.decoder = Decoder(encoded_dim, channels, depth, angle_mode, output)
+        self.decoder = Decoder(
+            encoded_dim, channels, depth, angle_mode, output, bypass
+        )
 
     @property
     def encoded_dim(self) -> int:
@@ -207,6 +217,7 @@ def create_axis_codec(
     depth: int = 8,
     angle_mode: str = "circular",
     output: str = "tanh",
+    bypass: bool = True,
     **kwargs,
 ) -> AxisCodec:
     """AxisCodec 工厂函数。"""
@@ -216,4 +227,5 @@ def create_axis_codec(
         depth=depth,
         angle_mode=angle_mode,
         output=output,
+        bypass=bypass,
     )
