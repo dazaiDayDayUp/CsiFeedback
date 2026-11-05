@@ -577,3 +577,26 @@ PM-VQ、CSI-PPPNet 把稀疏、低秩、多径或统计先验写进链路。本�
 平均、checkpoint 如何选择）差异很大；CFM-Bench 等工作专门指出这一点。本文因此把
 「同一指标实现 + 验证集选模型」作为公平性前提，并明确记录 baseline 的
 `select_best: all`（用测试集选模型）与本模型的 `val_loss` 差异。
+
+## 15. 消融实验设计（结果待填）
+
+所有消融在 CR1/4、300 epoch、seed 0 下与 baseline 配置（`axis_codec_indoor_cr4.yaml`，
+300 epoch 时 -28.984 dB）对比；除被消融的项外，其余设置完全一致。选模型统一用
+`select_best: val_loss`（MSE 臂也用同一 NMSE 指标选 checkpoint）。
+
+| 变体 | 被检验的模块 | 配置项 | 预期 | 结果 |
+|---|---|---|---|---|
+| baseline | — | — | — | -28.984 |
+| `mse` | 训练目标（逐样本归一化 vs 逐元素 MSE） | `extra.loss: "mse"` | 略差，且差异集中在弱样本 | 待跑 |
+| `densemix` | 角度轴循环卷积（圆群等变，32 参数）vs 稠密 32×32 | `extra.angle_mode: "dense"` | 参数×32，若更好说明「周期先验」不是收益来源 | 待跑 |
+| `nobase` | 线性基座直达输出 | `extra.base_skip: false` | 明显更差（头部精度丢失） | 待跑 |
+| `nobypass` | 线性旁路（stem→输出的未归一化通路） | `extra.bypass: false` | 若更好，说明旁路只带来早期噪声 | 待跑 |
+| `bn` | 逐位置 LN vs 逐通道 BN | `extra.norm: "bn"` | 检验「LN 抹掉弱 tap 幅度」的假设 | 待跑 |
+| `ch16` | 主干容量 | `extra.channels: 16` | 容量上界参考 | 待跑 |
+| `const` | 学习率调度（cosine vs const 1e-3） | `scheduler.name: "const"` | 隔离「配方」与「结构」的贡献 | 待跑 |
+| `ratio_clamp` | metric loss 的长尾稳健化 | `extra.ratio_clamp: 10.0` | 若更好，说明早期深谷来自长尾样本 | 待跑 |
+| `pcainit` | PCA 初始化（已证伪，见 §8） | `extra.pca_path` | 应显著更差（优化器破坏好解） | 待跑 |
+
+判定原则：**任何一个消融若与 baseline 持平或更好，就说明对应模块没有贡献**，
+必须在论文中如实报告（例如 `densemix` 若更好，则「周期算子」只能作为参数效率
+而非精度来源来主张）。
