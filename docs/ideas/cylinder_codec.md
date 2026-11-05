@@ -189,7 +189,7 @@ CylinderCodec（64 通道全分辨率卷积）在 CR1/4 是 **1.36 GFLOPs/样本
 即 AxisCodec(8ch) 在参数与算力都与 STNet 同量级的前提下，保留了几何先验与
 指标对齐的目标函数。
 
-仓库全量测试 **154 passed / 4 skipped**（`pytest tests/ -q`，17 s），说明新模型与
+仓库全量测试 **156 passed / 4 skipped**（`pytest tests/ -q`，17 s），说明新模型与
 训练器与平台（注册表、配置加载、checkpoint、实验摘要）完全兼容。
 
 几何性质有单元测试保证（`tests/test_axis_codec.py`）：
