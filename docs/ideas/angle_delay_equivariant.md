@@ -22,7 +22,9 @@ COST2100 的角-时延域来自 32 点角度 DFT 与 1024 点时延 DFT 的前 3
 
 - `CircularConv2d`：角度维 `circular` padding，时延维零 padding。
 - `PhysicsAttention2d`：8×8 特征上的多头自注意力，attention logits 加
-  `alpha * cos(2π Δangle) + beta * exp(-Δdelay²/2σ²)`；alpha/beta 可学习。
+  `alpha * cos(2π Δangle) + beta * exp(-Δdelay²/2σ²)`；alpha/beta 用
+  `2*tanh(raw)` 有界参数化。base 300 epoch 诊断发现 encoder alpha 增长到 9.64，
+  导致 attention softmax 饱和、测试曲线反复跌落；有界化用于后续配方。
 - 编码器：2→64→96→128，8×8 注意力，1×1 降到 16 通道，线性到码字。
 - 解码器：线性回 8×8×16，8×8 注意力，两次转置卷积回 32×32，最后圆周卷积 + sigmoid。
 

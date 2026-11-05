@@ -90,8 +90,9 @@ class PhysicsAttention2d(nn.Module):
             nn.GELU(),
             nn.Linear(int(dim * mlp_ratio), dim),
         )
-        self.alpha = nn.Parameter(torch.zeros(1))
-        self.beta = nn.Parameter(torch.zeros(1))
+        # 有界物理偏置：避免 alpha/beta 无约束增长导致 attention softmax 饱和。
+        self.alpha_raw = nn.Parameter(torch.zeros(1))
+        self.beta_raw = nn.Parameter(torch.zeros(1))
         self.sigma = sigma
         self._angle_bias: Optional[torch.Tensor] = None
         self._delay_bias: Optional[torch.Tensor] = None
@@ -123,7 +124,9 @@ class PhysicsAttention2d(nn.Module):
 
         tokens = x.flatten(2).transpose(1, 2)
         normed = self.norm1(tokens)
-        bias = self.alpha * self._angle_bias + self.beta * self._delay_bias
+        alpha = 2.0 * torch.tanh(self.alpha_raw)
+        beta = 2.0 * torch.tanh(self.beta_raw)
+        bias = alpha * self._angle_bias + beta * self._delay_bias
         attn, _ = self.attn(
             normed,
             normed,
