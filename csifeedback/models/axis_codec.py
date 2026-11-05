@@ -117,7 +117,11 @@ class Encoder(nn.Module):
     def __init__(self, encoded_dim: int, channels: int = 8, depth: int = 8,
                  angle_mode: str = "circular", pca_basis=None):
         super().__init__()
-        self.pca_basis = pca_basis
+        if pca_basis is None:
+            self.pca_basis = None
+        else:
+            # persistent=False：不写入 state_dict，但会随 .to(device) 迁移
+            self.register_buffer("pca_basis", pca_basis, persistent=False)
         self.stem = nn.Sequential(
             nn.Conv2d(2, channels, 3, padding=1), LayerNorm2d(channels), nn.GELU()
         )
@@ -148,7 +152,10 @@ class Decoder(nn.Module):
                  angle_mode: str = "circular", output: str = "linear",
                  bypass: bool = True, pca_basis=None):
         super().__init__()
-        self.pca_basis = pca_basis
+        if pca_basis is None:
+            self.pca_basis = None
+        else:
+            self.register_buffer("pca_basis", pca_basis, persistent=False)
         if output not in {"tanh", "linear"}:
             raise ValueError(f"output 必须是 tanh/linear，得到 {output!r}")
         self.output = output
@@ -210,7 +217,7 @@ class AxisCodec(CSIAutoencoder):
                 raise ValueError(
                     f"PCA 基形状 {tuple(basis.shape)} 与 encoded_dim={encoded_dim} 不匹配"
                 )
-            self.register_buffer("pca_basis", basis)
+            self.register_buffer("pca_basis", basis, persistent=False)
         self.encoder = Encoder(encoded_dim, channels, depth, angle_mode, basis)
         self.decoder = Decoder(
             encoded_dim, channels, depth, angle_mode, output, bypass, basis
