@@ -308,3 +308,21 @@ run `experiments/axis_codec/indoor_cr4/20261105_182644`，1000 epoch / 3.89 h /
 | C4 | 紧凑参数化物理模型（路径/簇/谐波）在 COST2100 indoor 上不可行 | 单 Dirichlet 原子 -0.34 dB、谐波 r=1,m=16 -2.44 dB、2D 团块 k=4 -5.16 dB、最优线性预测器 0.767 尾部相对误差；独立复核 `analysis/verify_rate_distortion.json` / `verify_error_decomposition.json` | 已完成 |
 | C5 | 在 CR1/4 上超过最强 baseline（STNet）且差距大于种子波动 | 1000 epoch 曲线（epoch 440: -30.53，450: -30.58 vs STNet -30.174）、3 seed 均值±std | 进行中 |
 | C6 | 增益在高压缩比更明显 | CR1/8–1/64 的 top-k oracle 领先 STNet 1.5-3 dB（`analysis/rate_distortion_in.json`）+ CR 矩阵实验 | 待实验 |
+
+
+### 4.6 训练稳定性与结果稳健性
+
+同一 run 的 30 次 `test_freq=10` 评估（epoch≥700）：
+
+| 区间 | 评估次数 | 均值 | 最小 | 最大 | 标准差 |
+|---|---|---|---|---|---|
+| epoch≥700 | 31 | -32.392 | -32.462 | -32.218 | **0.065 dB** |
+| epoch≥900 | 11 | -32.402 | -32.436 | -32.356 | **0.027 dB** |
+
+即最终阶段的 run 内波动只有 0.03-0.07 dB，而相对 STNet 的差距是 **2.29 dB**
+（约为该波动的 35-80 倍）。训练前期（300 epoch 前）最好只有 -28.68，300-600 达到
+-31.22，600-1000 达到 -32.46——**长训练 + 余弦退火是收益的主要来源之一**，
+这也解释了为什么按 300 epoch 预算做「结构性 gap」判断会低估该架构。
+
+早期（epoch<700，学习率较高时）存在 ±2~4 dB 的偶发深谷（见 4.3 的曲线），
+由 `select_best: val_loss` 兜住；退火到低学习率后深谷消失。
