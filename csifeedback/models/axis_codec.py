@@ -165,7 +165,8 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, encoded_dim: int, channels: int = 8, depth: int = 8,
                  angle_mode: str = "circular", output: str = "linear",
-                 bypass: bool = True, pca_basis=None, norm: str = "ln"):
+                 bypass: bool = True, pca_basis=None, norm: str = "ln",
+                 base_skip: bool = True):
         super().__init__()
         if pca_basis is None:
             self.pca_basis = None
@@ -174,6 +175,7 @@ class Decoder(nn.Module):
         if output not in {"tanh", "linear"}:
             raise ValueError(f"output 必须是 tanh/linear，得到 {output!r}")
         self.output = output
+        self.base_skip = base_skip
         self.fc = nn.Linear(encoded_dim, 2 * _ANGLE * _DELAY)
         self.stem = nn.Sequential(
             nn.Conv2d(2, channels, 3, padding=1), make_norm(norm, channels), nn.GELU()
@@ -203,7 +205,8 @@ class Decoder(nn.Module):
         res = self.head(h)
         if skip is not None:
             res = res + skip
-        out = base + res
+        # base_skip=False 消融：去掉「线性基座直达输出」，只保留非线性残差
+        out = (base + res) if self.base_skip else res
         if self.output == "tanh":
             return 0.5 + 0.5 * torch.tanh(out)
         return 0.5 + out
@@ -222,6 +225,7 @@ class AxisCodec(CSIAutoencoder):
         bypass: bool = True,
         pca_path: str = "",
         norm: str = "ln",
+        base_skip: bool = True,
     ):
         super().__init__()
         self._encoded_dim = encoded_dim
@@ -236,7 +240,8 @@ class AxisCodec(CSIAutoencoder):
             self.register_buffer("pca_basis", basis, persistent=False)
         self.encoder = Encoder(encoded_dim, channels, depth, angle_mode, basis, norm)
         self.decoder = Decoder(
-            encoded_dim, channels, depth, angle_mode, output, bypass, basis, norm
+            encoded_dim, channels, depth, angle_mode, output, bypass, basis, norm,
+            base_skip,
         )
         if basis is not None:
             self._zero_init_residuals()
@@ -277,6 +282,7 @@ def create_axis_codec(
     bypass: bool = True,
     pca_path: str = "",
     norm: str = "ln",
+    base_skip: bool = True,
     **kwargs,
 ) -> AxisCodec:
     """AxisCodec 工厂函数。"""
@@ -289,4 +295,5 @@ def create_axis_codec(
         bypass=bypass,
         pca_path=pca_path,
         norm=norm,
+        base_skip=base_skip,
     )
