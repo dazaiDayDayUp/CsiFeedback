@@ -115,8 +115,9 @@ class AxisBlock(nn.Module):
 
 class Encoder(nn.Module):
     def __init__(self, encoded_dim: int, channels: int = 8, depth: int = 8,
-                 angle_mode: str = "circular"):
+                 angle_mode: str = "circular", pca_basis=None):
         super().__init__()
+        self.pca_basis = pca_basis
         self.stem = nn.Sequential(
             nn.Conv2d(2, channels, 3, padding=1), LayerNorm2d(channels), nn.GELU()
         )
@@ -135,14 +136,19 @@ class Encoder(nn.Module):
         h = self.stem(x)
         for blk in self.blocks:
             h = blk(h)
-        return self.fc(self.head(h).flatten(1))
+        z = self.fc(self.head(h).flatten(1))
+        if self.pca_basis is not None:
+            # 固定 PCA 投影 + 学习的残差编码（fc 零初始化 ⇒ 初始即 PCA 系数）
+            z = z + F.linear((x - 0.5).flatten(1), self.pca_basis)
+        return z
 
 
 class Decoder(nn.Module):
     def __init__(self, encoded_dim: int, channels: int = 8, depth: int = 8,
-                 angle_mode: str = "circular", output: str = "tanh",
-                 bypass: bool = True):
+                 angle_mode: str = "circular", output: str = "linear",
+                 bypass: bool = True, pca_basis=None):
         super().__init__()
+        self.pca_basis = pca_basis
         if output not in {"tanh", "linear"}:
             raise ValueError(f"output 必须是 tanh/linear，得到 {output!r}")
         self.output = output
@@ -164,17 +170,21 @@ class Decoder(nn.Module):
         )
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
-        h = self.fc(z).view(-1, 2, _ANGLE, _DELAY)
-        h = self.stem(h)
+        # 线性基座：PCA 模式下是固定合成基（+ 零初始化的可学习修正），否则是可学习线性映射。
+        base = self.fc(z).view(-1, 2, _ANGLE, _DELAY)
+        if self.pca_basis is not None:
+            base = base + F.linear(z, self.pca_basis.t()).view(-1, 2, _ANGLE, _DELAY)
+        h = self.stem(base)
         skip = self.bypass(h) if self.bypass is not None else None
         for blk in self.blocks:
             h = blk(h)
-        h = self.head(h)
+        res = self.head(h)
         if skip is not None:
-            h = h + skip
+            res = res + skip
+        out = base + res
         if self.output == "tanh":
-            return 0.5 + 0.5 * torch.tanh(h)
-        return h + 0.5
+            return 0.5 + 0.5 * torch.tanh(out)
+        return 0.5 + out
 
 
 class AxisCodec(CSIAutoencoder):
@@ -186,15 +196,39 @@ class AxisCodec(CSIAutoencoder):
         channels: int = 8,
         depth: int = 8,
         angle_mode: str = "circular",
-        output: str = "tanh",
+        output: str = "linear",
         bypass: bool = True,
+        pca_path: str = "",
     ):
         super().__init__()
         self._encoded_dim = encoded_dim
-        self.encoder = Encoder(encoded_dim, channels, depth, angle_mode)
+        basis = None
+        if pca_path:
+            payload = torch.load(pca_path, map_location="cpu", weights_only=False)
+            basis = payload["basis"].float()
+            if tuple(basis.shape) != (encoded_dim, 2 * _ANGLE * _DELAY):
+                raise ValueError(
+                    f"PCA 基形状 {tuple(basis.shape)} 与 encoded_dim={encoded_dim} 不匹配"
+                )
+            self.register_buffer("pca_basis", basis)
+        self.encoder = Encoder(encoded_dim, channels, depth, angle_mode, basis)
         self.decoder = Decoder(
-            encoded_dim, channels, depth, angle_mode, output, bypass
+            encoded_dim, channels, depth, angle_mode, output, bypass, basis
         )
+        if basis is not None:
+            self._zero_init_residuals()
+
+    def _zero_init_residuals(self) -> None:
+        """PCA 初始化：残差分支零初始化，使初始前向严格等于 PCA 自编码器。"""
+        for module in (self.encoder.fc, self.decoder.fc, self.decoder.bypass):
+            if hasattr(module, "weight"):
+                nn.init.zeros_(module.weight)
+            if getattr(module, "bias", None) is not None:
+                nn.init.zeros_(module.bias)
+        last = self.decoder.head[-1]
+        nn.init.zeros_(last.weight)
+        if last.bias is not None:
+            nn.init.zeros_(last.bias)
 
     @property
     def encoded_dim(self) -> int:
@@ -216,8 +250,9 @@ def create_axis_codec(
     channels: int = 8,
     depth: int = 8,
     angle_mode: str = "circular",
-    output: str = "tanh",
+    output: str = "linear",
     bypass: bool = True,
+    pca_path: str = "",
     **kwargs,
 ) -> AxisCodec:
     """AxisCodec 工厂函数。"""
@@ -228,4 +263,5 @@ def create_axis_codec(
         angle_mode=angle_mode,
         output=output,
         bypass=bypass,
+        pca_path=pca_path,
     )

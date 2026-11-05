@@ -28,6 +28,14 @@ def test_forward_shape(encoded_dim):
         out = model(x)
     assert out.shape == x.shape
     assert not torch.isnan(out).any()
+
+
+def test_tanh_output_is_bounded():
+    model = get_model("axis_codec", encoded_dim=512, output="tanh")
+    model.eval()
+    x = torch.randn(2, 2, 32, 32)
+    with torch.no_grad():
+        out = model(x)
     assert out.min() >= 0.0 and out.max() <= 1.0
 
 
@@ -78,6 +86,27 @@ def test_block_keeps_shape():
     blk = AxisBlock(8)
     x = torch.randn(2, 8, 32, 32)
     assert blk(x).shape == x.shape
+
+
+def test_pca_init_equals_pca_reconstruction():
+    """PCA 初始化必须让初始前向严格等于 PCA 自编码器（残差零初始化）。"""
+    import os
+
+    path = os.path.join(
+        str(repo_root), "experiments", "pca", "indoor_512.pt"
+    )
+    if not os.path.exists(path):
+        pytest.skip("PCA 基未生成（scripts/compute_pca_basis.py）")
+    torch.manual_seed(0)
+    model = get_model("axis_codec", encoded_dim=512, pca_path=path)
+    model.eval()
+    x = torch.randn(4, 2, 32, 32) * 0.3 + 0.35
+    with torch.no_grad():
+        out = model(x)
+    basis = model.pca_basis
+    z = torch.nn.functional.linear((x - 0.5).flatten(1), basis)
+    pca = torch.nn.functional.linear(z, basis.t()).view(-1, 2, 32, 32) + 0.5
+    assert torch.allclose(out, pca, atol=1e-5)
 
 
 def test_bypass_flag_changes_output_path():
