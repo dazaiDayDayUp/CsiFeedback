@@ -95,6 +95,29 @@ python scripts/compare.py --latest --min-epochs 100
 
 完整协议、论文参考值和已知偏差见 [`docs/baselines.md`](docs/baselines.md)。
 
+## 研究模型：AxisCodec（`idea/cylinder_codec`）
+
+物理出发点：COST2100 的角时延表示是一个「半开圆柱」——角度轴是圆周（均匀线阵的
+阵列流形以 1 为周期，bin 31 与 bin 0 相邻），时延轴是半直线（时延非负、能量沿 tap
+单调衰减，无平移不变性）。AxisCodec 把这两条几何写成**零参数硬约束**：角度轴用
+DFT 域循环卷积（逐通道 32 参数），时延轴用稠密线性混合（每个 tap 独立读出头）；
+解码器为「线性基座 + 非线性残差」；训练目标 `MetricMSELoss` 与报告指标
+（逐用户归一化 NMSE）只差一个 log10，且 checkpoint 选择与训练目标解耦。
+
+复杂度与 STNet 同量级：CR1/4 时 **2.13M 参数 / 0.022 GFLOPs/样本**
+（STNet 2.13M 有效参数 / 0.014 GFLOPs）。
+
+**Indoor CR1/4（`select_best: val_loss`，完全不使用测试集选模型）**
+
+| 模型 | epoch | NMSE (dB) | rho | checkpoint 选择 |
+|---|---|---|---|---|
+| STNet（固定 checkpoint 复评） | 1000 | -30.174 | 0.99669 | test（`all`） |
+| AxisCodec | 300 | -28.984 | 0.99639 | val |
+| AxisCodec | 1000 | 见下节/`docs/ideas/cylinder_codec.md` | | val |
+
+完整的动机、负结果（路径参数化、谐波子空间、团块、PCA 初始化）与误差分解见
+[`docs/ideas/cylinder_codec.md`](docs/ideas/cylinder_codec.md)。
+
 ## 分支与实验工作流
 
 ```text
