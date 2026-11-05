@@ -43,7 +43,22 @@ csifeedback/configs/ideas/angle_delay_equivariant/angle_delay_equivariant_indoor
 
 ## 结果
 
-待填。
+### 2026-11-05 screening（indoor CR4，300 epoch）
+
+base const lr=1e-3（无约束 alpha/beta）：best **-21.91 dB**（epoch 140），但曲线反复
+跌落（epoch 160 -14.56、200 -13.58），encoder alpha 长到 9.64，判定不稳定。
+
+lr5e4 + `2*tanh` 有界偏置（epoch 10/20/30/40）：
+
+| epoch | ADEF lr5e4 | STNet |
+|---|---|---|
+| 10 | -11.87 | -8.50 |
+| 20 | -15.90 | -12.89 |
+| 30 | -17.45 | -16.11 |
+| 40 | **-18.90** | -16.67 |
+
+epoch 40 领先 STNet 约 2.2 dB，曲线稳定。300 epoch 最终结果待填；
+full 3-seed 队列 `queue_adef_lr5e4_full.txt` 已准备。
 
 ## 消融计划
 
