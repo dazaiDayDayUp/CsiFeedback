@@ -21,12 +21,19 @@ __all__ = ["MetricMSELoss", "CylinderCodecTrainer", "STNetMetricTrainer"]
 
 
 class MetricMSELoss(nn.Module):
-    """逐样本归一化均方误差（与 ``compute_nmse`` 同一约定，不含 log）。"""
+    """逐样本归一化均方误差（与 ``compute_nmse`` 同一约定，不含 log）。
 
-    def __init__(self, zero_point: float = 0.5, min_power: float = 1e-3):
+    ``ratio_clamp``：单样本 ratio 的上限。ratio > 1 意味着重建误差已大于信号本身
+    （训练早期的灾难样本），若不设上限，单个样本会主导整个 batch 的梯度并造成
+    训练振荡。默认 10.0，仅在病态样本上生效，不改变正常区间的目标。
+    """
+
+    def __init__(self, zero_point: float = 0.5, min_power: float = 1e-3,
+                 ratio_clamp=None):
         super().__init__()
         self.zero_point = zero_point
         self.min_power = min_power
+        self.ratio_clamp = ratio_clamp
 
     def forward(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         t = target - self.zero_point
@@ -34,7 +41,10 @@ class MetricMSELoss(nn.Module):
         power = (t[:, 0] ** 2 + t[:, 1] ** 2).sum(dim=(1, 2))
         diff = p - t
         mse = (diff[:, 0] ** 2 + diff[:, 1] ** 2).sum(dim=(1, 2))
-        return (mse / power.clamp_min(self.min_power)).mean()
+        ratio = mse / power.clamp_min(self.min_power)
+        if self.ratio_clamp:
+            ratio = ratio.clamp_max(self.ratio_clamp)
+        return ratio.mean()
 
 
 class CylinderCodecTrainer(DefaultTrainer):
@@ -46,9 +56,12 @@ class CylinderCodecTrainer(DefaultTrainer):
 
     def __init__(self, config, model, device):
         super().__init__(config, model, device)
+        clamp = config.model.extra.get("ratio_clamp", None)
+        if clamp is not None:
+            clamp = float(clamp)
         loss_name = str(config.model.extra.get("loss", "metric")).lower()
         if loss_name == "metric":
-            self.criterion = MetricMSELoss()
+            self.criterion = MetricMSELoss(ratio_clamp=clamp)
         elif loss_name == "mse":
             self.criterion = nn.MSELoss()
         else:
@@ -56,7 +69,7 @@ class CylinderCodecTrainer(DefaultTrainer):
         self.grad_clip = float(config.model.extra.get("grad_clip", 1.0))
         # 选模型始终用逐样本归一化指标，即使训练目标是 MSE —— 保证目标函数消融只
         # 改变训练信号，不改变 checkpoint 选择准则。
-        self.val_criterion = MetricMSELoss()
+        self.val_criterion = MetricMSELoss(ratio_clamp=clamp)
 
     @torch.no_grad()
     def _validate(self, val_loader):
