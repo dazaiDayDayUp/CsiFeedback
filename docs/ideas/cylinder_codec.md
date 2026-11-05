@@ -490,3 +490,44 @@ STNet 为 0.51 dB）。原因有两点：(i) 循环算子本身严格等变，�
 > 自身的 run 内波动为 0.39 dB。逐样本胜率 91%，中位增益 4.39 dB。误差分解显示
 > 线性基座把头部相对误差从 3.7e-4 降到 3.0e-5（12 倍），长训练进一步把尾部从
 > 9.4e-3 降到 7.6e-3，两者叠加给出全部增益。
+
+## 12. 论文实验节草稿
+
+### 12.1 数据集与划分
+
+COST2100 indoor / outdoor，角时延域稀疏 CSI，形状 `(N, 2, 32, 32)`（实部/虚部 ×
+32 角度 bin × 32 时延 tap）。训练/验证/测试为官方划分（100k / 20k / 20k），所有模型
+共用同一 `data/` 文件。rho 由测试集的 `DATA_HtestF{in,out}_all.mat` 计算。
+
+### 12.2 指标
+
+NMSE（dB，越低越好）：$\frac{1}{B}\sum_i \lVert\hat H_i-H_i\rVert_F^2/\lVert H_i-0.5\rVert_F^2$，
+再取 $10\log_{10}$；rho 为 125 子载波上的复数余弦相似度。二者与 baseline 使用
+**同一实现**（`csifeedback/metrics/csi_metrics.py`），并有单测保证。
+
+### 12.3 Baseline
+
+CLNet、STNet、CsiNet，各自使用仓库中固定的结构、优化器与 1000 epoch 协议
+（`docs/baselines.md`）。对比采用**固定 checkpoint 复评**值（不是训练中观察到的最优
+值），例如 STNet indoor CR1/4 = -30.174 dB / rho 0.996690。
+
+### 12.4 实现细节
+
+AdamW（lr 5e-4、wd 1e-4、betas 0.9/0.999）、cosine 退火至 5e-5、warmup 30 epoch、
+batch 200、梯度裁剪 1.0、1000 epoch；单卡训练，CR1/4 约 3.9 h。模型 2.13M 参数、
+0.022 GFLOPs/样本（`torch.utils.flop_counter`，batch=1）。
+
+### 12.5 模型选择
+
+新模型一律用验证集（`select_best: val_loss`）选择 checkpoint；消融中若训练目标是
+MSE，验证仍使用同一 NMSE 指标，保证「训练目标」是唯一变量。为对照，也报告
+「按测试集最优」协议下会选到哪个 epoch——两者在 CR1/4 上是同一个（epoch 820）。
+
+### 12.6 复杂度
+
+| 模型 | 参数 | 有效参数 | FLOPs/样本 |
+|---|---|---|---|
+| CsiNet CR1/4 | 2.103M | 2.103M | 0.0108 G |
+| CLNet CR1/4 | 2.102M | 2.102M | 0.0081 G |
+| STNet CR1/4 | 3.176M | 2.125M | 0.0138 G |
+| **AxisCodec CR1/4** | **2.127M** | **2.127M** | **0.0219 G** |
