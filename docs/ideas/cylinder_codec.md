@@ -279,7 +279,7 @@ run `experiments/axis_codec/indoor_cr4/20261105_182644`，1000 epoch / 3.89 h /
 CLNet 论文值 -29.16、CsiNet 论文值 -17.36。
 且我方完全不使用测试集选模型（baseline 的 `select_best: all` 反而用了测试集）。
 
-误差分解（2000 测试样本）：
+误差分解（2000 测试样本，可用仓库内 `scripts/analyze_errors.py` 复现）：
 
 | 模型 | 头部相对误差 (tap<4) | 尾部相对误差 (tap≥4) | 头部误差占比 | 总 NMSE | rho |
 |---|---|---|---|---|---|
