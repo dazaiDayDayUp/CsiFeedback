@@ -1,0 +1,36 @@
+model:
+  name: "angle_delay_equivariant"
+  encoded_dim: 512
+  extra:
+    base_channels: 64
+    num_heads: 4
+    sigma: 1.0
+data:
+  data_dir: "./data"
+  scenario: "indoor"
+  batch_size: 200
+  num_workers: 0
+  pin_memory: false
+  load_raw: true
+optimizer:
+  name: "adam"
+  lr: 0.001
+  betas: [0.9, 0.999]
+  weight_decay: 0.0
+  separate_enc_dec: false
+scheduler:
+  name: "cosine"
+  T_max: null
+  T_warmup: null
+  eta_min: 0.00005
+training:
+  epochs: 300
+  device: "auto"
+  seed: 0
+  val_freq: 10
+  test_freq: 10
+  print_freq: 20
+  checkpoint_dir: "./experiments"
+  checkpoint_freq: 50
+  resume: null
+  select_best: "all"

@@ -51,6 +51,8 @@ csifeedback/configs/ideas/angle_delay_equivariant/angle_delay_equivariant_indoor
 | zero padding | 全部换回零 padding |
 | no bias | alpha=beta=0，保留圆周卷积 |
 | attention off | 去掉 PhysicsAttention |
+| lr5e4 | 学习率 5e-4 的配方消融（base 300 epoch 有振荡） |
+| cosine | cosine warmup 调度替代 const |
 
 ## 运行命令
 
