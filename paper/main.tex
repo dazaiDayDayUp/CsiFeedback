@@ -52,7 +52,8 @@ circle and the delay axis is a half-line, so angle mixing is a circulant operato
 (32 parameters per channel) and delay mixing is a dense $32\times32$ map. A linear
 base plus a nonlinear residual decoder, trained with the per-user NMSE that the
 benchmark actually reports, reaches $-32.52\pm0.55$~dB at CR~$1/4$ against
-$-30.17$~dB for STNet, with the same parameter count and $1.6\times$ its FLOPs.
+$-30.17$~dB for STNet, with the same effective parameter count and $1.6\times$
+its FLOPs.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -560,7 +561,7 @@ representation and the distribution of the residual. Encoding that geometry as
 circulant angle mixing and dense delay mixing, splitting the decoder into a linear
 base and a nonlinear residual, and training on the reported per-user NMSE yields
 $-32.52\pm0.55$~dB at CR~$1/4$ against $-30.17$~dB for STNet, with equal
-parameters and a $1.6\times$ FLOP budget.
+effective parameters and a $1.6\times$ FLOP budget.
 
 \begin{thebibliography}{24}
 \bibitem{wen2018} C.-K. Wen, W.-T. Shih, and S. Jin, ``Deep learning for massive
