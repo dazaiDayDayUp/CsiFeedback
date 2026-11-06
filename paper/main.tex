@@ -514,13 +514,14 @@ are generalisation transients rather than divergence, and validation-based
 selection absorbs them.
 
 \section{Discussion}
-\textbf{Why the geometric prior is worth only 0.25~dB.} Periodicity is a boundary
-condition; it affects a thin shell of the representation (bins 0 and 31) and the
-parameter count of the operator, not the allocation of information across the 2048
-coefficients. A prior that only fixes boundaries cannot move NMSE much. The priors
-that did move NMSE---the metric-aligned objective and the linear/residual split---
-act on \emph{how bits are distributed}, which is why they are worth 1.50 and
-0.44~dB.
+\textbf{Why the geometric prior is worth only 0.25~dB.} A circulant mixer is a
+32-parameter constraint on a 1024-parameter operator: it fixes the wrap-around at
+bins 0 and 31 and forbids a dense map from treating them as distant. Angular
+profiles in this data are smooth enough that a dense mixer learns nearly the same
+operator from 100k samples, so the constraint buys a $32\times$ smaller operator and
+$1.4\times$ fewer FLOPs rather than accuracy. The priors that did move NMSE---the
+metric-aligned objective and the linear/residual split---act on \emph{how bits are
+distributed}, which is why they are worth 1.50 and 0.44~dB.
 
 \textbf{Why long training matters.} A 300-epoch run of the same recipe is
 3.5~dB behind the 1000-epoch one, and the gain is concentrated in the tail: its relative error
