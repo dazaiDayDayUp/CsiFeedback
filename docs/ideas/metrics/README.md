@@ -12,3 +12,4 @@ git commit。
 | `axis_codec_indoor_cr4_1000ep_seed1.json` | `experiments/axis_codec/indoor_cr4/20261105_235526` | CR1/4，1000 epoch，seed 1，复评 -33.093 dB |
 | `axis_codec_indoor_cr4_1000ep_seed2.json` | `experiments/axis_codec/indoor_cr4/20261106_025326` | CR1/4，1000 epoch，seed 2，复评 -31.995 dB |
 | `axis_codec_indoor_cr16_1000ep_seed0.json` | `experiments/axis_codec/indoor_cr16/20261106_082212` | CR1/16，1000 epoch，seed 0，复评 -15.300 dB |
+| `axis_codec_indoor_cr64_1000ep_seed0.json` | `experiments/axis_codec/indoor_cr64/20261106_112653` | CR1/64，1000 epoch，seed 0，复评 -8.942 dB / rho 0.9349 |
