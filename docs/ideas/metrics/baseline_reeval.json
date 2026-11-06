@@ -1,0 +1,107 @@
+{
+  "clnet_cr4": {
+    "nmse_nmse": -27.8825,
+    "rho_nmse": 0.996151,
+    "run": "experiments/clnet/indoor_cr4/20260619_003631",
+    "nmse_rho": -27.8825,
+    "rho_rho": 0.996151
+  },
+  "clnet_cr8": {
+    "nmse_nmse": -15.5714,
+    "rho_nmse": 0.983619,
+    "run": "experiments/clnet/indoor_cr8/20260619_104031",
+    "nmse_rho": -15.5639,
+    "rho_rho": 0.983621
+  },
+  "clnet_cr16": {
+    "nmse_nmse": -10.6802,
+    "rho_nmse": 0.955872,
+    "run": "experiments/clnet/indoor_cr16/20260619_204327",
+    "nmse_rho": -10.6802,
+    "rho_rho": 0.955872
+  },
+  "clnet_cr32": {
+    "nmse_nmse": -8.9456,
+    "rho_nmse": 0.93454,
+    "run": "experiments/clnet/indoor_cr32/20260620_070035",
+    "nmse_rho": -8.9456,
+    "rho_rho": 0.93454
+  },
+  "clnet_cr64": {
+    "nmse_nmse": -6.0427,
+    "rho_nmse": 0.869826,
+    "run": "experiments/clnet/indoor_cr64/20260620_163926",
+    "nmse_rho": -6.0405,
+    "rho_rho": 0.869926
+  },
+  "csinet_cr4": {
+    "nmse_nmse": -9.9917,
+    "rho_nmse": 0.945332,
+    "run": "experiments/csinet/indoor_cr4/20260624_164405",
+    "nmse_rho": -9.9917,
+    "rho_rho": 0.945332
+  },
+  "csinet_cr8": {
+    "nmse_nmse": -11.1203,
+    "rho_nmse": 0.960037,
+    "run": "experiments/csinet/indoor_cr8/20260619_135626",
+    "nmse_rho": -11.1203,
+    "rho_rho": 0.960037
+  },
+  "csinet_cr16": {
+    "nmse_nmse": -8.7353,
+    "rho_nmse": 0.934834,
+    "run": "experiments/csinet/indoor_cr16/20260620_004115",
+    "nmse_rho": -8.7353,
+    "rho_rho": 0.934834
+  },
+  "csinet_cr32": {
+    "nmse_nmse": -8.497,
+    "rho_nmse": 0.928123,
+    "run": "experiments/csinet/indoor_cr32/20260620_101625",
+    "nmse_rho": -8.497,
+    "rho_rho": 0.928123
+  },
+  "csinet_cr64": {
+    "nmse_nmse": -4.336,
+    "rho_nmse": 0.799094,
+    "run": "experiments/csinet/indoor_cr64/20260620_210106",
+    "nmse_rho": -4.336,
+    "rho_rho": 0.799094
+  },
+  "stnet_cr4": {
+    "nmse_nmse": -30.1667,
+    "rho_nmse": 0.996688,
+    "run": "experiments/stnet/indoor_cr4/20260619_064715",
+    "nmse_rho": -30.1667,
+    "rho_rho": 0.996688
+  },
+  "stnet_cr8": {
+    "nmse_nmse": -19.2799,
+    "rho_nmse": 0.991399,
+    "run": "experiments/stnet/indoor_cr8/20260619_162327",
+    "nmse_rho": -19.2677,
+    "rho_rho": 0.991427
+  },
+  "stnet_cr16": {
+    "nmse_nmse": -14.7523,
+    "rho_nmse": 0.981229,
+    "run": "experiments/stnet/indoor_cr16/20260620_030825",
+    "nmse_rho": -14.7523,
+    "rho_rho": 0.981229
+  },
+  "stnet_cr32": {
+    "nmse_nmse": -9.5095,
+    "rho_nmse": 0.943053,
+    "run": "experiments/stnet/indoor_cr32/20260620_124216",
+    "nmse_rho": -9.4992,
+    "rho_rho": 0.943291
+  },
+  "stnet_cr64": {
+    "nmse_nmse": -6.822,
+    "rho_nmse": 0.891693,
+    "run": "experiments/stnet/indoor_cr64/20260621_000607",
+    "nmse_rho": -6.822,
+    "rho_rho": 0.891693
+  }
+}
