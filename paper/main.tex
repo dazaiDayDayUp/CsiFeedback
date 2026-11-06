@@ -409,10 +409,9 @@ objective remains the largest contributor at convergence ($3.0$~dB at 1000
 epochs, against $1.50$~dB at 300), while the prior is the cheapest choice and the
 only one that reduces compute.
 
-A per-sample breakdown of the 300-epoch MSE run shows a uniform gain across the
-power distribution ($1.4$--$1.6$~dB in every quartile, 97.5\% of samples improved):
-it comes from optimising the reported quantity, heavy tail included, not from
-re-weighting toward weak channels.
+A per-sample breakdown shows the gain is spread over the power distribution:
+$1.4$--$1.6$~dB in every quartile at 300 epochs, $2.6$--$3.3$~dB at 1000, and
+largest for the weakest channels, which the per-user normalisation weights most.
 
 \begin{table}[!t]
 \centering
