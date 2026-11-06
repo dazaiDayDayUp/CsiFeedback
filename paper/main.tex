@@ -542,9 +542,10 @@ energy is what invalidates parametric models here; on a more specular dataset, s
 as a CDL-C-like model with strong line-of-sight, path-based coding could become
 competitive again; our oracle procedure is the way to check. Multi-seed
 evidence covers CR~$1/4$; the other ratios are single-seed. The model costs
-$1.6\times$ STNet's FLOPs. Finally, the transients described above indicate a
-rougher optimisation landscape than STNet's, which is a clear target for future
-work.
+$1.6\times$ STNet's FLOPs. The latent is assumed noiseless, as in the baselines;
+how the geometry prior interacts with a quantiser is left open. Finally, the
+transients described above indicate a rougher optimisation landscape than STNet's,
+which is a clear target for future work.
 
 \textbf{Reproducibility.} Every configuration is a YAML file fixing the model,
 optimiser, schedule and seed; each run writes a \texttt{metrics.json} with the
