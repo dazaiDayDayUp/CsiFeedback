@@ -384,10 +384,10 @@ CR~$1/4$.}
 \centering
 \includegraphics[width=\textwidth]{fig5_qual.pdf}
 \caption{Same test channel compressed at CR~$1/4$ (a) and CR~$1/16$ (b). The
-sample is the median of the per-sample NMSE of AxisCodec at CR~$1/4$, so neither
-model is favoured by the choice. Colour is $|H|$ in dB relative to the sample
-peak; taps 16--31 carry 0.9\% of the energy and are omitted; the dashed line marks
-the head/tail split. Numbers are per-sample NMSE.}
+sample is the median per-sample NMSE of AxisCodec at CR~$1/4$, so neither model is
+favoured. Colour is $|H|$ in dB relative to the sample peak; taps 16--31 carry
+0.9\% of the energy and are omitted; the dashed line marks the head/tail split.
+Numbers are per-sample NMSE.}
 \label{fig:qual}
 \end{figure*}
 
@@ -402,18 +402,17 @@ mid-tap error that dominates the residual, not a global sharpening.
 
 \subsection{Ablations}
 Table~\ref{tab:abl} isolates the three design choices at 300 epochs, where a full
-sweep is affordable. Replacing the metric-aligned
-objective by MSE costs $1.50$~dB; removing the linear base costs $0.44$~dB;
-replacing the circulant angle mixer by a dense $32\times32$ map costs $0.25$~dB
-while raising FLOPs by $1.4\times$. The objective is thus the largest single
-contributor, the linear base second, and the geometric prior third---but the prior
-is also the cheapest, and it is the only one that reduces compute.
+sweep is affordable. Replacing the metric-aligned objective by MSE costs
+$1.50$~dB; removing the linear base $0.44$~dB; replacing the circulant angle mixer
+by a dense $32\times32$ map $0.25$~dB while raising FLOPs by $1.4\times$. The
+objective remains the largest contributor at convergence ($3.03$~dB at 1000
+epochs, against $1.50$~dB at 300), while the prior is the cheapest choice and the
+only one that reduces compute.
 
-A per-sample breakdown of the 300-epoch MSE run shows that the gain is uniform
-across the power distribution ($1.4$--$1.6$~dB in every power quartile, 97.5\% of
-samples improved). It does not come from re-weighting toward weak channels, as one
-might expect; it comes from optimising the reported quantity, including its
-heavy tail, and from better conditioning.
+A per-sample breakdown of the 300-epoch MSE run shows a uniform gain across the
+power distribution ($1.4$--$1.6$~dB in every quartile, 97.5\% of samples improved):
+it comes from optimising the reported quantity, heavy tail included, not from
+re-weighting toward weak channels.
 
 \begin{table}[!t]
 \centering
@@ -531,8 +530,8 @@ and their gradients weak, so they need a long anneal; any conclusion drawn at 30
 epochs underestimates this architecture.
 
 \textbf{Practical rules.} Two lessons transfer beyond this benchmark. First, match
-the training objective to the reported metric: here that is worth 1.50~dB, more
-than any architectural change we tried. Second, spend parameters on the geometry of
+the training objective to the reported metric: here that is worth 1.5--3~dB,
+more than any architectural change we tried. Second, spend parameters on the geometry of
 the representation rather than on a channel model the data does not obey. For a
 uniform planar array the angle axis becomes a two-torus, so one circulant mixer
 becomes two at $2N$ parameters per channel, while the delay path is unchanged. What
@@ -551,8 +550,8 @@ work.
 \textbf{Reproducibility.} Every configuration is a YAML file fixing the model,
 optimiser, schedule and seed; each run writes a \texttt{metrics.json} with the
 commit, the selected checkpoint and its re-evaluated NMSE and $\rho$. Baselines use
-the repository's own implementations with their published recipes, and the oracle
-fits, analysis scripts and checkpoints behind every number and figure are included.
+the repository's own implementations; the oracle fits, scripts and checkpoints
+behind every number and figure are included.
 A 1000-epoch run takes 3.9~h on one RTX~5090.
 
 \section{Conclusion}

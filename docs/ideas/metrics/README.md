@@ -18,6 +18,7 @@ git commit。
 | `axis_codec_indoor_cr4_mse_300ep_seed0.json` | `experiments/axis_codec/indoor_cr4/20261106_054746` | 消融：MSE 目标，300 epoch，-27.485 dB |
 | `axis_codec_indoor_cr4_nobase_300ep_seed0.json` | `experiments/axis_codec/indoor_cr4/20261106_072951` | 消融：去线性基座，300 epoch，-28.549 dB |
 | `axis_codec_indoor_cr4_densemix_300ep_seed0.json` | `experiments/axis_codec/indoor_cr4/20261106_064004` | 消融：稠密角度混合，300 epoch，-28.736 dB |
+| `axis_codec_indoor_cr4_mse_1000ep_seed0.json` | `experiments/axis_codec/indoor_cr4/20261106_203523` | 消融：MSE 目标，1000 epoch，-29.492 dB（对照 metric 目标 -32.52，差 3.03 dB） |
 | `baseline_reeval.json` | `paper/scripts/eval_baselines.py` | 三个 baseline × 5 个 CR 的固定 checkpoint 复评（NMSE/rho） |
 
 论文图表由 `paper/scripts/data_prep.py` 读取本目录（实时实验目录存在时优先使用实时
