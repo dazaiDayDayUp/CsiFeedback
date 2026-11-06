@@ -71,8 +71,7 @@ attention: full attention \cite{cui2022}, spatially separable attention
 A parallel line replaces the image codec by a parametric one: estimate a few
 propagation paths, transmit their angles, delays and gains, and synthesise the
 channel at the receiver \cite{guo2022model,liu2022markov,ma2023typeii}. The appeal
-is obvious: a far-field channel is a sum of plane waves, so a handful of numbers
-should suffice.
+is obvious: a far-field channel is a sum of plane waves.
 
 This paper starts by asking whether that is true for the standard benchmark. We answer with rate-matched oracle fits rather than with another architecture.
 On COST2100 indoor, an oracle fit of $k$ continuous Dirichlet atoms, an oracle
@@ -137,7 +136,7 @@ the raw matrix \cite{liu2021ev}. Our diagnostic in Section~\ref{sec:where} quant
 this family can and cannot buy on COST2100.
 
 \textbf{Generative and task-oriented decoders.} Diffusion-based compression treats
-low-rate recovery as an under-determined inverse problem \cite{kim2025,ankireddy2026}.
+low-rate recovery as an under-determined inverse problem \cite{kim2025}.
 System-level views argue that NMSE is only a proxy for beamforming gain
 \cite{guo2025onesided}. We keep the standard NMSE/$\rho$ protocol for comparability
 and report $\rho$ separately, because it moves differently at high compression.
@@ -367,9 +366,9 @@ is already within 1~dB of STNet.
 \includegraphics[width=\columnwidth]{fig4_rd.pdf}
 \caption{Rate--distortion on COST2100 indoor. PCA and the free-support sparse
 oracle are evaluated at the stated budget. AxisCodec beats the 512-dimensional PCA
-subspace by 3.3~dB at CR~$1/4$ and STNet at every ratio; blue numbers below the axis
-give the gain over STNet, and error bars show the standard deviation over three
-seeds (CR~$1/4$ only).}
+subspace by 3.3~dB at CR~$1/4$ and STNet at every ratio; blue numbers below the
+axis are gains over STNet, and error bars are seed standard deviations at
+CR~$1/4$.}
 \label{fig:rd}
 \end{figure}
 
@@ -525,27 +524,25 @@ the training objective to the reported metric: here that is worth 1.50~dB, more
 than any architectural change we tried. Second, spend parameters on the geometry of
 the representation rather than on a channel model the data does not obey. For a
 uniform planar array the angle axis becomes a two-torus, so one circulant mixer
-becomes two at $2N$ parameters per channel while the delay path is unchanged. What
-must be re-checked, not assumed, is the diagnostic: fit the parametric family of
-choice at a matched rate against a free sparse code before committing to a
-path-based design.
+becomes two at $2N$ parameters per channel, while the delay path is unchanged. What
+must be re-checked, not assumed, is the diagnostic: fit the parametric family at a
+matched rate against a free sparse code before adopting a path-based design.
 
 \textbf{Limitations.} All results are on COST2100. Its diffuse angular--delay
 energy is what invalidates parametric models here; on a more specular dataset, such
 as a CDL-C-like model with strong line-of-sight, path-based coding could become
-competitive again, and our oracle procedure is the right way to check. Multi-seed
+competitive again; our oracle procedure is the way to check. Multi-seed
 evidence covers CR~$1/4$; the other ratios are single-seed. The model costs
 $1.6\times$ STNet's FLOPs. Finally, the transients described above indicate a
 rougher optimisation landscape than STNet's, which is a clear target for future
 work.
 
-\textbf{Reproducibility.} Every configuration is a YAML file that fixes the model,
-the optimiser, the schedule and the seed, and every run writes a
-\texttt{metrics.json} recording the commit, the selected checkpoint and its
-re-evaluated NMSE and $\rho$. Baselines use the repository's own CsiNet, CLNet and
-STNet implementations with their published recipes, and the oracle fits, analysis
-scripts and checkpoints that produce each number and figure are included. One
-1000-epoch run takes about 3.9~h on a single RTX~5090.
+\textbf{Reproducibility.} Every configuration is a YAML file fixing the model,
+optimiser, schedule and seed; each run writes a \texttt{metrics.json} with the
+commit, the selected checkpoint and its re-evaluated NMSE and $\rho$. Baselines use
+the repository's own implementations with their published recipes, and the oracle
+fits, analysis scripts and checkpoints behind every number and figure are included.
+A 1000-epoch run takes 3.9~h on one RTX~5090.
 
 \section{Conclusion}
 Compact parametric channel models do not describe COST2100: rate-matched oracle
@@ -576,26 +573,28 @@ pp.~1092--1096, 2022.
 \emph{Proc. ICLR}, 2018.
 \bibitem{cui2022} Y. Cui, A. Guo, and C. Song, ``TransNet: Full attention network
 for CSI feedback in FDD massive MIMO system,'' \emph{IEEE Wireless Commun. Lett.},
-2022.
+vol.~11, no.~5, pp.~903--907, May 2022.
 \bibitem{mourya2023} S. Mourya, S. Amuru, and K. K. Kuchi, ``A spatially separable
 attention mechanism for massive MIMO CSI feedback,'' \emph{IEEE Wireless Commun.
 Lett.}, vol.~12, no.~1, pp.~40--44, 2023.
-\bibitem{lou2025} K. Lou and X. Wu, ``Attention-infused autoencoder for massive
-MIMO CSI compression,'' \emph{IEEE Trans. Wireless Commun.}, 2025.
+\bibitem{lou2025} K. Lou, H. Ji, and X. Wu, ``Attention-infused autoencoder for
+massive MIMO CSI compression,'' in \emph{Proc. IEEE Wireless Commun. Netw. Conf.
+(WCNC)}, 2025, pp.~1--6.
 \bibitem{ansarifard2025} M. Ansarifard \emph{et al.}, ``CSI compression beyond
 latents: End-to-end hybrid attention-CNN networks with entropy regularization,''
 arXiv:2509.08776, 2025.
 \bibitem{cai2019} Q. Cai, C. Dong, and K. Niu, ``Attention model for massive MIMO
-CSI compression feedback and recovery,'' in \emph{Proc. IEEE WCNC}, 2019.
+CSI compression feedback and recovery,'' in \emph{Proc. IEEE Wireless Commun. Netw.
+Conf. (WCNC)}, 2019, pp.~1--5.
 \bibitem{saldr2021} X. Song \emph{et al.}, ``SALDR: Joint self-attention learning
 and dense refine for massive MIMO CSI feedback with multiple compression ratio,''
-\emph{IEEE Wireless Commun. Lett.}, 2021.
+\emph{IEEE Wireless Commun. Lett.}, vol.~10, no.~9, pp.~1899--1903, Sep. 2021.
 \bibitem{guo2022model} J. Guo \emph{et al.}, ``CSI feedback with model-driven deep
 learning of massive MIMO systems,'' \emph{IEEE Commun. Lett.}, vol.~26, no.~3,
 pp.~547--551, 2022.
 \bibitem{liu2022markov} Z. Liu, M. del Rosario, and Z. Ding, ``A Markovian
 model-driven deep learning framework for massive MIMO CSI feedback,'' \emph{IEEE
-Trans. Wireless Commun.}, 2022.
+Trans. Wireless Commun.}, vol.~21, no.~2, pp.~1214--1228, Feb. 2022.
 \bibitem{ma2023typeii} K. Ma \emph{et al.}, ``Deep learning empowered Type-II
 codebook: New paradigm for enhancing CSI feedback,'' arXiv:2305.08081, 2023.
 \bibitem{qin2025} Z. Qin and H. Yin, ``A review of codebooks for CSI feedback in 5G
@@ -604,10 +603,8 @@ new radio and beyond,'' \emph{China Commun.}, vol.~22, no.~2, pp.~112--127, 2025
 under 3GPP link-level channels,'' \emph{IEEE Wireless Commun. Lett.}, vol.~10,
 no.~12, pp.~2688--2692, 2021.
 \bibitem{kim2025} H. Kim \emph{et al.}, ``Generative diffusion model-based
-compression of MIMO CSI,'' in \emph{Proc. IEEE ICC}, 2025.
-\bibitem{ankireddy2026} S. K. Ankireddy, H. Kim, J. Cho, and H. Kim, ``Residual
-diffusion models for variable-rate joint source channel coding of MIMO CSI,''
-\emph{IEEE J. Sel. Areas Commun.}, 2026, to appear.
+compression of MIMO CSI,'' in \emph{Proc. IEEE Int. Conf. Commun. (ICC)}, 2025,
+pp.~1--6.
 \bibitem{guo2025onesided} Y. Guo \emph{et al.}, ``Deep learning for CSI feedback:
 One-sided model and joint multi-module learning perspectives,'' \emph{IEEE Commun.
 Mag.}, vol.~63, no.~7, pp.~90--97, 2025.
