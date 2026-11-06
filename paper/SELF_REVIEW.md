@@ -69,7 +69,9 @@
 | 头部/尾部误差（CR1/4） | 3.7e-4 / 9.4e-3（STNet），3.0e-5 / 7.6e-3（ours） | `meta.json: decomp_*` |
 | taps 7–9 误差份额 / 信号份额 | 42% / 0.7% | 同上（0.4196 / 0.0070） |
 | head→tail 岭回归 R² | 0.235（正文写 23%） | 40k 训练样本独立复算 |
-| 消融四分位增益 / 改善样本 | 1.42–1.60 dB / 97.5% | 300-epoch checkpoint 复算 |
+| 消融四分位增益（300 ep） | 1.42–1.60 dB | 300-epoch checkpoint 复算 |
+| 消融四分位增益（1000 ep） | 2.58–3.31 dB（弱信道最大） | 1000-epoch checkpoint 复算 |
+| 目标函数差距 | 1.50 dB（300 ep）→ 3.0 dB（1000 ep） | 两组 MSE/metric 运行对比 |
 | PCA-512 误差份额 | 0.3%（taps 0–3）/ 99.7%（4–31） | `experiments/pca/indoor_512.pt` 复算 |
 | 参数 / FLOPs | 2.13 M / 0.022 G（STNet 2.13 M 有效 / 0.014 G） | `analysis/complexity.json` |
 
