@@ -8,8 +8,13 @@
 \usepackage{url}
 \usepackage[font=small,labelfont=bf,labelsep=period]{caption}
 \usepackage{balance}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={AxisCodec: Geometry-Aware CSI Feedback on the Angular-Delay Cylinder},
+  pdfauthor={Ziheng Wang and Kimi Code},
+  pdfkeywords={CSI feedback, massive MIMO, angular-delay, physics-informed learning}}
 
 \graphicspath{{figures/}}
+\setlength{\emergencystretch}{1.2em}
 
 \newcommand{\Hb}{\mathbf{H}}
 \newcommand{\Hh}{\hat{\mathbf{H}}}
@@ -259,8 +264,8 @@ gets its own read-out; zero padding at the boundary reflects the absence of
 negative delay.
 
 A block applies layer normalisation, the angle mixer, a GELU, the delay mixer, a
-GELU and a $1\times1$ channel MLP with two channels per hidden unit, wrapped in a
-residual connection. Eight blocks are stacked; both mixers are global along their
+GELU and a $1\times1$ channel MLP of twice the channel width, wrapped in a residual
+connection. Eight blocks are stacked; both mixers are global along their
 axis, so a single block already couples every angle bin and every delay tap.
 Per-position layer normalisation keeps the weakly energetic delay tail on the same
 numerical footing as the head.
@@ -295,8 +300,8 @@ normalised error
 \mathrm{NMSE}=\frac{1}{B}\sum_{i=1}^{B}
 \frac{\lVert\Hh_i-\Hb_i\rVert_F^2}{\lVert\Hb_i-0.5\rVert_F^2}.
 \end{equation}
-The two weight samples differently: MSE weights by power, NMSE does not, and its
-mean is dominated by the samples a model currently fails on. We minimise (4)
+They weight samples differently: MSE weights by power, NMSE does not, and its mean
+is dominated by the samples a model currently fails on. We minimise (4)
 directly (without the logarithm) and---this matters for the ablation---select the
 checkpoint with the same quantity on the validation split. When an ablation
 replaces the training loss by MSE, validation and selection still use (4), so the

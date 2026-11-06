@@ -96,7 +96,7 @@ for r, cr in enumerate(rows):
         ax.set_xticks([0, 8, 16, 24, 31])
         ax.set_yticks([0, 4, 8, 12, 15])
         ax.set_ylim(-0.5, 15.5)
-        ax.tick_params(labelsize=6.9, length=2, pad=1.4)
+        ax.tick_params(labelsize=7.2, length=2, pad=1.4)
         ax.axhline(3.5, color="w", lw=0.55, ls=(0, (3, 2)), alpha=0.9)
         for s in ax.spines.values():
             s.set_linewidth(0.55)

@@ -45,7 +45,7 @@ ax.set_ylim(-0.5, 31.5)
 ax.text(2.0, 27.5, f"{meta['first4_energy']*100:.0f}%", color="w", fontsize=8.0,
         ha="center", va="center", fontweight="bold",
         bbox=dict(boxstyle="round,pad=0.18", fc="black", ec="none", alpha=0.35))
-ax.text(7.25, 1.6, "taps 8–31:\n0.9%", color="w", fontsize=6.8, ha="right", va="bottom",
+ax.text(7.25, 1.6, "taps 8–31:\n0.9%", color="w", fontsize=7.0, ha="right", va="bottom",
         bbox=dict(boxstyle="round,pad=0.16", fc="black", ec="none", alpha=0.3))
 cb = fig.colorbar(im, ax=ax, pad=0.045, fraction=0.048)
 cb.set_label("energy (a.u.)", fontsize=7.2, labelpad=9.0)
@@ -65,7 +65,7 @@ axp.set_theta_direction(-1)
 axp.set_xticks(np.deg2rad([0, 90, 180, 270]))
 axp.set_xticklabels(["0", "8", "16", "24"], fontsize=7)
 axp.set_yticks([0.04, 0.08])
-axp.set_yticklabels(["4%", "8%"], fontsize=6.2, color=style.C["grey"])
+axp.set_yticklabels(["4%", "8%"], fontsize=6.8, color=style.C["grey"])
 axp.set_rlabel_position(203)
 axp.set_ylim(0, 0.135)
 axp.tick_params(pad=-2.0)
@@ -75,7 +75,7 @@ axp.plot([seam, seam], [0, 0.130], color=style.C["red"], lw=0.8, ls=(0, (2.2, 1.
 axp.plot([0], [angle[0]], "o", ms=2.4, color=style.C["blue"], zorder=7)
 axp.plot([2 * np.pi * 31 / 32], [angle[31]], "o", ms=2.4, color=style.C["blue"], zorder=7)
 axp.text(seam - 0.12, 0.030, "seam", ha="right", va="center",
-         fontsize=6.6, color=style.C["red"])
+         fontsize=7.0, color=style.C["red"])
 axp.spines["polar"].set_linewidth(0.7)
 axp.spines["polar"].set_color(style.C["grey"])
 axp.text(0.5, -0.30, "angle bin (circular)", transform=axp.transAxes,
