@@ -1,9 +1,9 @@
 """汇总论文所需的全部真实数据，缓存为 .npz / .json，供各图脚本使用。
 
 数据来源：
-  - data/DATA_Htestin.mat / DATA_Htrainin.mat：角时延能量统计
-  - CsiFeedback-research/analysis/*.json：oracle、误差分解、复杂度
-  - worktree/experiments/**/metrics.json：主结果与消融
+  - data/DATA_Htestin.mat：角时延能量统计
+  - paper/data/analysis/*.json：oracle、误差分解（随仓库保存）
+  - worktree/experiments/**/metrics.json 或 docs/ideas/metrics/*.json：主结果与消融
 """
 
 import glob
@@ -19,6 +19,34 @@ RES = Path("/home/wzh/myProjects/CsiFeedback-research")
 WT = Path("/home/wzh/myProjects/CsiFeedback-worktrees/cylinder_codec")
 OUT = WT / "paper" / "data"
 OUT.mkdir(parents=True, exist_ok=True)
+ANA = OUT / "analysis"
+ARCHIVE = WT / "docs" / "ideas" / "metrics"
+
+
+def ana(name: str) -> Path:
+    """优先读随仓库保存的拷贝，缺失时回退到研究目录。"""
+    local = ANA / name
+    return local if local.exists() else RES / "analysis" / name
+
+
+def iter_metrics():
+    """合并实时运行与归档的 metrics.json（按 exp_dir 去重）。"""
+    seen, out = set(), []
+    paths = sorted(glob.glob(str(WT / "experiments/axis_codec/*/*/metrics.json")))
+    paths += sorted(glob.glob(str(ARCHIVE / "*.json")))
+    for p in paths:
+        try:
+            d = json.loads(Path(p).read_text())
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(d, dict) or "config" not in d:
+            continue
+        key = d.get("exp_dir") or p
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(d)
+    return out
 
 BASELINE = {  # STNet 固定 checkpoint 复评（logs/baseline_eval）
     "cr4": (-30.174291610717773, 0.9966896772384644),
@@ -52,7 +80,7 @@ def energy_stats():
 
 
 def oracle():
-    rd = json.loads((RES / "analysis/rate_distortion_in.json").read_text())
+    rd = json.loads(ana("rate_distortion_in.json").read_text())
     return {
         "pca": {int(k): v for k, v in rd["pca_nmse_db"].items()},
         "topk": {int(k): v for k, v in rd["topk_oracle_nmse_db"].items()},
@@ -63,9 +91,9 @@ def oracle():
 def parametric():
     out = {}
     for name, path, key in (
-        ("tail4", RES / "analysis/tail_predict.json", "4"),
-        ("blob2", RES / "analysis/blob_fit.json", "2"),
-        ("blob4", RES / "analysis/blob_fit.json", "4"),
+        ("tail4", ana("tail_predict.json"), "4"),
+        ("blob2", ana("blob_fit.json"), "2"),
+        ("blob4", ana("blob_fit.json"), "4"),
     ):
         if path.exists():
             d = json.loads(path.read_text())
@@ -77,7 +105,7 @@ def parametric():
 
 
 def decomp(name):
-    p = RES / f"analysis/{name}"
+    p = ana(name)
     if not p.exists():
         return None
     d = json.loads(p.read_text())
@@ -103,8 +131,7 @@ def decomp(name):
 
 def runs():
     out = {}
-    for p in glob.glob(str(WT / "experiments/axis_codec/*/*/metrics.json")):
-        d = json.loads(Path(p).read_text())
+    for d in iter_metrics():
         cfg = d.get("config") or {}
         sel = (d.get("selected") or {}).get("best_val") or {}
         if not sel:
@@ -115,7 +142,7 @@ def runs():
         rec = {
             "nmse": sel.get("nmse"), "rho": sel.get("rho"), "epoch": sel.get("epoch"),
             "epochs": d.get("epochs_completed"), "extra": extra,
-            "cfg": cfg, "dir": Path(p).parent.name,
+            "cfg": cfg, "dir": str(d.get("exp_dir", "")),
         }
         if key not in out or (rec["epochs"] or 0) > (out[key]["epochs"] or 0):
             out[key] = rec
@@ -134,48 +161,35 @@ def is_baseline(extra):
 
 
 def cr_matrix():
-    """每个 CR 取 1000 epoch 的最佳（同一 seed 0），CR4 取三 seed。"""
-    rs = runs()
-    by = {}
-    for r in rs:
-        scn, cr, seed, ep, _ = None, None, None, None, None
-        # 从 dir 推断 CR 与 scenario 需要 cfg，这里直接用字段
+    """每个 CR 取 1000 epoch 结果；CR1/4 含三个 seed。"""
     out = {}
-    for r in rs:
-        cfg = r["cfg"]
-        scn = cfg.get("data.scenario") or cfg.get("data.scenario")
-        cr = r.get("extra") and None
-    # 直接用 metrics 里已存的 scenario / compression_ratio 由 runs() 丢失，重新读
-    rows = []
-    for p in glob.glob(str(WT / "experiments/axis_codec/*/*/metrics.json")):
-        d = json.loads(Path(p).read_text())
+    for d in iter_metrics():
         cfg = d.get("config") or {}
         sel = (d.get("selected") or {}).get("best_val") or {}
         if not sel or (d.get("epochs_completed") or 0) < 1000:
             continue
-        rows.append({
-            "scenario": d.get("scenario"), "cr": int(str(d.get("compression_ratio"))[2:]),
-            "seed": cfg.get("training.seed"), "nmse": sel["nmse"], "rho": sel["rho"],
-            "extra": cfg.get("model.extra") or {},
-        })
-    for r in rows:
-        if not is_baseline(r["extra"]):
+        extra = cfg.get("model.extra") or {}
+        if not is_baseline(extra):
             continue
-        out.setdefault(r["cr"], []).append(r)
+        cr = int(str(d.get("compression_ratio"))[2:])
+        out.setdefault(cr, []).append({
+            "scenario": d.get("scenario"), "cr": cr,
+            "seed": cfg.get("training.seed"), "nmse": sel["nmse"], "rho": sel["rho"],
+            "extra": extra,
+        })
     return out
 
 
 def ablations():
-    """300 epoch 的消融（seed 0）。"""
+    """300 epoch 的消融运行（含多个 seed 时全部返回）。"""
     rows = []
-    for p in glob.glob(str(WT / "experiments/axis_codec/indoor_cr4/*/metrics.json")):
-        d = json.loads(Path(p).read_text())
+    for d in iter_metrics():
         cfg = d.get("config") or {}
         sel = (d.get("selected") or {}).get("best_val") or {}
         if not sel or d.get("epochs_completed") != 300:
             continue
         rows.append({"extra": cfg.get("model.extra") or {}, "nmse": sel["nmse"],
-                     "sched": cfg.get("scheduler.name"), "dir": Path(p).parent.name})
+                     "sched": cfg.get("scheduler.name"), "dir": str(d.get("exp_dir", ""))})
     return rows
 
 

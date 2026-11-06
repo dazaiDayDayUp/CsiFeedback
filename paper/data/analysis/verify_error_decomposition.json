@@ -1,0 +1,489 @@
+{
+  "meta": {
+    "verify_name": "error_decomposition",
+    "generated_at": "2026-11-05T15:02:36",
+    "checkpoint": "/home/wzh/myProjects/CsiFeedback/experiments/stnet/indoor_cr4/20260619_064715/checkpoints/best_nmse.pth",
+    "checkpoint_epoch": 1000,
+    "checkpoint_best_nmse": -30.166685104370117,
+    "checkpoint_best_rho": 0.996688187122345,
+    "checkpoint_equals_epoch1000_max_abs_diff": 0.0,
+    "data": "COST2100 indoor test split (DATA_Htestin.mat / DATA_HtestFin_all.mat)",
+    "n_total_test": 20000,
+    "n_samples": 2000,
+    "sampling": "numpy default_rng(seed).choice without replacement, sorted",
+    "seed": 20261105,
+    "device": "cpu",
+    "torch_threads": 4,
+    "torch_version": "2.11.0+cu128",
+    "git_commit": "68ffcc1",
+    "repo_functions_cross_checked": true,
+    "forward_seconds": 0.43,
+    "full_test_seconds": 5.07,
+    "total_seconds": 12.7
+  },
+  "primary_subset": {
+    "nmse_db_independent_float64": -30.1810989607046,
+    "nmse_db_repo_compute_nmse": -30.181100845336914,
+    "nmse_diff_db": 1.8846323150967237e-06,
+    "rho_independent_float64": 0.9967606024514177,
+    "rho_repo_compute_rho": 0.9967604875564575,
+    "rho_diff": 1.1489496021255263e-07,
+    "global_energy_ratio_err_over_sig": 0.0010643717551489778,
+    "global_energy_ratio_db": -29.72906658684437,
+    "nmse_p50_db": -32.641453894459374,
+    "nmse_p90_db": -26.61921753322339,
+    "nmse_p99_db": -22.705773054751,
+    "rho_min": 0.2240494368919857,
+    "rho_p05": 0.9897902198566734
+  },
+  "full_test_reference": {
+    "nmse_db_repo": -30.174291610717773,
+    "rho_repo": 0.9966897964477539,
+    "train_log_epoch1000": {
+      "nmse_db": -30.1667,
+      "rho": 0.9967
+    }
+  },
+  "delay_tap_decomposition": {
+    "axis_note": "err/sig 在样本、32 个角度 bin、实虚部上求和后按 dim3（时延 tap）聚合",
+    "err_total": 1.9772196756568583,
+    "sig_total": 1857.6401206551288,
+    "head_tap_0_3": {
+      "taps": [
+        0,
+        3
+      ],
+      "err_share": 0.31434724052584595,
+      "sig_share": 0.9222766233535492,
+      "rel_err_energy": 0.0003627787104785723,
+      "rel_err_db": -34.40358207259599
+    },
+    "tail_tap_4_31": {
+      "taps": [
+        4,
+        31
+      ],
+      "err_share": 0.6856527594741542,
+      "sig_share": 0.07772337664645089,
+      "rel_err_energy": 0.009389574443528373,
+      "rel_err_db": -20.273540904831393
+    },
+    "head_share_ratio_err_over_sig": 0.34083834780808797,
+    "tail_share_ratio_err_over_sig": 8.8217057603282,
+    "per_sample_mean_of_ratios": {
+      "head_mean_nmse_db": -34.96916456332616,
+      "tail_mean_nmse_db": -17.30968387630483,
+      "head_median_nmse_db": -37.36241987121194,
+      "tail_median_nmse_db": -21.858875668047368
+    },
+    "per_tap": [
+      {
+        "tap": 0,
+        "err_share": 0.14042597130980464,
+        "sig_share": 0.12524229274348933,
+        "rel_err": 0.0011934102632378282,
+        "rel_err_db": -29.23210231576227
+      },
+      {
+        "tap": 1,
+        "err_share": 0.047936969676953906,
+        "sig_share": 0.5763608909551595,
+        "rel_err": 8.852570906923712e-05,
+        "rel_err_db": -40.52930585963541
+      },
+      {
+        "tap": 2,
+        "err_share": 0.07974997766058459,
+        "sig_share": 0.16043124864504396,
+        "rel_err": 0.0005290965719745422,
+        "rel_err_db": -32.76465052259973
+      },
+      {
+        "tap": 3,
+        "err_share": 0.04623432187850282,
+        "sig_share": 0.060242191009856436,
+        "rel_err": 0.000816877764586838,
+        "rel_err_db": -30.87842925275501
+      },
+      {
+        "tap": 4,
+        "err_share": 0.02516598661174675,
+        "sig_share": 0.03856518251447119,
+        "rel_err": 0.0006945634272559037,
+        "rel_err_db": -31.58288088516066
+      },
+      {
+        "tap": 5,
+        "err_share": 0.017174611000676746,
+        "sig_share": 0.018167809811450147,
+        "rel_err": 0.0010061846223902173,
+        "rel_err_db": -29.973223243210505
+      },
+      {
+        "tap": 6,
+        "err_share": 0.01592403877413407,
+        "sig_share": 0.008196353700514976,
+        "rel_err": 0.002067882587597525,
+        "rel_err_db": -26.844741237048364
+      },
+      {
+        "tap": 7,
+        "err_share": 0.08417640552285746,
+        "sig_share": 0.003678473813344979,
+        "rel_err": 0.024356565530916124,
+        "rel_err_db": -16.13383950691384
+      },
+      {
+        "tap": 8,
+        "err_share": 0.17536825268065126,
+        "sig_share": 0.002070942194977121,
+        "rel_err": 0.09013144613878339,
+        "rel_err_db": -10.451236607203274
+      },
+      {
+        "tap": 9,
+        "err_share": 0.16005760543433079,
+        "sig_share": 0.0012815859828128368,
+        "rel_err": 0.1329296642642515,
+        "rel_err_db": -8.763780921295432
+      },
+      {
+        "tap": 10,
+        "err_share": 0.059699187616651654,
+        "sig_share": 0.0009152412563032115,
+        "rel_err": 0.06942664425023765,
+        "rel_err_db": -11.584738259407004
+      },
+      {
+        "tap": 11,
+        "err_share": 0.026432518757338288,
+        "sig_share": 0.0007055948272209686,
+        "rel_err": 0.039872778678897255,
+        "rel_err_db": -13.99323497900129
+      },
+      {
+        "tap": 12,
+        "err_share": 0.014470897875945028,
+        "sig_share": 0.0005660699652888102,
+        "rel_err": 0.027209383848766602,
+        "rel_err_db": -15.652812926234187
+      },
+      {
+        "tap": 13,
+        "err_share": 0.009537111663031728,
+        "sig_share": 0.00046864254854811304,
+        "rel_err": 0.021660500761788416,
+        "rel_err_db": -16.64331507287451
+      },
+      {
+        "tap": 14,
+        "err_share": 0.006668245398215426,
+        "sig_share": 0.0003953635731323418,
+        "rel_err": 0.01795181079033518,
+        "rel_err_db": -17.45891737805082
+      },
+      {
+        "tap": 15,
+        "err_share": 0.005583423260815119,
+        "sig_share": 0.00033855175407123387,
+        "rel_err": 0.017553706174575003,
+        "rel_err_db": -17.55631175423925
+      },
+      {
+        "tap": 16,
+        "err_share": 0.005322269155672846,
+        "sig_share": 0.0002935532900719049,
+        "rel_err": 0.01929759656657632,
+        "rel_err_db": -17.144967771513514
+      },
+      {
+        "tap": 17,
+        "err_share": 0.004201937618208287,
+        "sig_share": 0.0002571138440817468,
+        "rel_err": 0.017394721523812256,
+        "rel_err_db": -17.595825195832365
+      },
+      {
+        "tap": 18,
+        "err_share": 0.0037859124457636267,
+        "sig_share": 0.00022720638273018466,
+        "rel_err": 0.017735497684161012,
+        "rel_err_db": -17.511566200788607
+      },
+      {
+        "tap": 19,
+        "err_share": 0.003182909491019717,
+        "sig_share": 0.00020229057484578668,
+        "rel_err": 0.016747191331181077,
+        "rel_err_db": -17.760580179793255
+      },
+      {
+        "tap": 20,
+        "err_share": 0.0031734744652141137,
+        "sig_share": 0.00018133795020349767,
+        "rel_err": 0.01862685986397159,
+        "rel_err_db": -17.29860352763113
+      },
+      {
+        "tap": 21,
+        "err_share": 0.0031473785228707633,
+        "sig_share": 0.00016354084780729325,
+        "rel_err": 0.020484061611650495,
+        "rel_err_db": -16.885839265713074
+      },
+      {
+        "tap": 22,
+        "err_share": 0.003020601687946638,
+        "sig_share": 0.0001482925412310465,
+        "rel_err": 0.021680410177856112,
+        "rel_err_db": -16.639325055149065
+      },
+      {
+        "tap": 23,
+        "err_share": 0.002736046179462705,
+        "sig_share": 0.0001351272113900761,
+        "rel_err": 0.021551323706346,
+        "rel_err_db": -16.665260498324127
+      },
+      {
+        "tap": 24,
+        "err_share": 0.0071654166175156185,
+        "sig_share": 0.000123680692738669,
+        "rel_err": 0.06166416837326024,
+        "rel_err_db": -12.09967121187232
+      },
+      {
+        "tap": 25,
+        "err_share": 0.020823488958460767,
+        "sig_share": 0.0001136656512587004,
+        "rel_err": 0.19499235913053137,
+        "rel_err_db": -7.099824063424185
+      },
+      {
+        "tap": 26,
+        "err_share": 0.017309741733464133,
+        "sig_share": 0.00010485249816659531,
+        "rel_err": 0.17571350718558637,
+        "rel_err_db": -7.551948527864606
+      },
+      {
+        "tap": 27,
+        "err_share": 0.002168764919908472,
+        "sig_share": 9.705608887735749e-05,
+        "rel_err": 0.02378389806357672,
+        "rel_err_db": -16.237169651603757
+      },
+      {
+        "tap": 28,
+        "err_share": 0.0024609323019423525,
+        "sig_share": 9.012563035325833e-05,
+        "rel_err": 0.029063284475840542,
+        "rel_err_db": -15.366553071360975
+      },
+      {
+        "tap": 29,
+        "err_share": 0.002269086906422236,
+        "sig_share": 8.393738220287533e-05,
+        "rel_err": 0.02877325870536223,
+        "rel_err_db": -15.4101094945438
+      },
+      {
+        "tap": 30,
+        "err_share": 0.002331095704647076,
+        "sig_share": 7.83889832921597e-05,
+        "rel_err": 0.03165180006644647,
+        "rel_err_db": -14.996015862249937
+      },
+      {
+        "tap": 31,
+        "err_share": 0.002295418169240445,
+        "sig_share": 7.339513506381221e-05,
+        "rel_err": 0.0332880137555592,
+        "rel_err_db": -14.777121177521728
+      }
+    ]
+  },
+  "axis_orientation_check": {
+    "note": "若把 dim2 误当 tap 会得到的聚合：",
+    "dim2_err_share_tap_lt_4": 0.3364792764186859,
+    "dim2_sig_share_tap_lt_4": 0.302059143781662,
+    "dim2_rel_err_tap_lt_4": 0.0011856587370857596,
+    "dim2_rel_err_tap_ge_4": 0.0010118804639205337
+  },
+  "comparison": [
+    {
+      "claim": "NMSE 复评（2000 随机样本）",
+      "recorded": -30.17,
+      "measured": -30.1810989607046,
+      "delta": -0.01109896070459726,
+      "within_tolerance": true
+    },
+    {
+      "claim": "rho 复评（2000 随机样本）",
+      "recorded": 0.9967,
+      "measured": 0.9967606024514177,
+      "delta": 6.060245141770171e-05,
+      "within_tolerance": true
+    },
+    {
+      "claim": "头部误差占比 tap<4",
+      "recorded": 0.3,
+      "measured": 0.31434724052584595,
+      "delta": 0.014347240525845961,
+      "within_tolerance": true
+    },
+    {
+      "claim": "尾部误差占比 tap>=4",
+      "recorded": 0.7,
+      "measured": 0.6856527594741542,
+      "delta": -0.014347240525845795,
+      "within_tolerance": true
+    },
+    {
+      "claim": "尾部信号占比 tap>=4",
+      "recorded": 0.079,
+      "measured": 0.07772337664645089,
+      "delta": -0.0012766233535491112,
+      "within_tolerance": true
+    },
+    {
+      "claim": "头部相对误差 tap<4",
+      "recorded": 0.00037,
+      "measured": 0.0003627787104785723,
+      "delta": -7.221289521427683e-06,
+      "within_tolerance": true
+    },
+    {
+      "claim": "尾部相对误差 tap>=4",
+      "recorded": 0.0094,
+      "measured": 0.009389574443528373,
+      "delta": -1.0425556471627129e-05,
+      "within_tolerance": true
+    }
+  ],
+  "all_claims_hold": true,
+  "robustness": {
+    "note": "n=2000 的随机子集估计存在抽样波动；RandomState(0) 一行复现 analyze_run.py 的采样方式",
+    "seeds": [
+      {
+        "rng": "default_rng",
+        "seed": 0,
+        "nmse_db": -30.146835225090175,
+        "rho": 0.9966589635554878,
+        "head_err_share": 0.31790745724351277,
+        "tail_err_share": 0.6820925427564873,
+        "tail_sig_share": 0.0788496817845683,
+        "head_rel_err": 0.0003769168041729211,
+        "tail_rel_err": 0.009447538005931037
+      },
+      {
+        "rng": "default_rng",
+        "seed": 1,
+        "nmse_db": -30.07043494988505,
+        "rho": 0.9966538271888651,
+        "head_err_share": 0.3185501625201239,
+        "tail_err_share": 0.6814498374798762,
+        "tail_sig_share": 0.07674436070135321,
+        "head_rel_err": 0.0003761670402949224,
+        "tail_rel_err": 0.009680823400790897
+      },
+      {
+        "rng": "default_rng",
+        "seed": 2,
+        "nmse_db": -30.27225329415937,
+        "rho": 0.996621860105155,
+        "head_err_share": 0.3300078210084188,
+        "tail_err_share": 0.6699921789915811,
+        "tail_sig_share": 0.0772300241804684,
+        "head_rel_err": 0.00037179759587658635,
+        "tail_rel_err": 0.00901902025694726
+      },
+      {
+        "rng": "default_rng",
+        "seed": 3,
+        "nmse_db": -30.279922071247526,
+        "rho": 0.9966506069775658,
+        "head_err_share": 0.3075055533241809,
+        "tail_err_share": 0.692494446675819,
+        "tail_sig_share": 0.07939358382638985,
+        "head_rel_err": 0.0003550400742540135,
+        "tail_rel_err": 0.009271058008767662
+      },
+      {
+        "rng": "default_rng",
+        "seed": 20261105,
+        "nmse_db": -30.1810989607046,
+        "rho": 0.9967606024514177,
+        "head_err_share": 0.31434724052584595,
+        "tail_err_share": 0.6856527594741542,
+        "tail_sig_share": 0.07772337664645089,
+        "head_rel_err": 0.0003627787104785723,
+        "tail_rel_err": 0.009389574443528373
+      },
+      {
+        "rng": "RandomState",
+        "seed": 0,
+        "note": "matches analyze_run.py sampling",
+        "nmse_db": -30.171197508718777,
+        "rho": 0.9966984003422104,
+        "head_err_share": 0.3176344771828608,
+        "tail_err_share": 0.682365522817139,
+        "tail_sig_share": 0.07882897566613252,
+        "head_rel_err": 0.00037353484535390316,
+        "tail_rel_err": 0.009377238159832938
+      }
+    ],
+    "full_test_batch_sensitivity": [
+      {
+        "batch": 50,
+        "nmse_db": -30.174292032186543,
+        "rho": 0.9966897125677632
+      },
+      {
+        "batch": 100,
+        "nmse_db": -30.174292266717394,
+        "rho": 0.9966897125297738
+      },
+      {
+        "batch": 200,
+        "nmse_db": -30.174292246700926,
+        "rho": 0.9966897125205245
+      },
+      {
+        "batch": 500,
+        "nmse_db": -30.17429231748614,
+        "rho": 0.9966897125632602
+      }
+    ],
+    "subset_nmse_range_db": [
+      -30.279922071247526,
+      -30.07043494988505
+    ],
+    "subset_rho_range": [
+      0.996621860105155,
+      0.9967606024514177
+    ]
+  },
+  "per_tap_concentration": {
+    "note": "尾部误差并非均匀弥散，而是集中在少数 tap（该表基于主 run 的 2000 随机样本）",
+    "taps_7_9_err_share": 0.4196022636378395,
+    "taps_24_26_err_share": 0.04529864730944052,
+    "taps_10_23_err_share": 0.15096191413815593,
+    "taps_4_6_plus_27_31_err_share": 0.06978993438871814,
+    "taps_0_3_err_share": 0.31434724052584595,
+    "taps_7_9_sig_share": 0.0070310019911349365,
+    "taps_24_26_sig_share": 0.0003421988421639647,
+    "taps_7_9_rel_err": 0.06352050509668532,
+    "taps_24_26_rel_err": 0.14089644616483443,
+    "global_energy_ratio_err_over_sig": 0.0010643717551489778
+  },
+  "notes": [
+    "best_nmse.pth 的权重与 epoch1000.pth 完全相同（max|Δw| = 0），记录的 -30.1667 dB 即 epoch 1000 测试值。",
+    "全测试集 CPU float32 复评为 -30.1743 dB，与训练日志 -30.1667 dB 差 0.008 dB；batch 50/100/200/500 结果完全一致，差异来自训练时 GPU（TF32/cuDNN）与 CPU 的浮点路径不同，量级可忽略。",
+    "用 analyze_run.py 的 RandomState(0) 采样复现出 -30.1712 dB / rho 0.996698，与登记的 -30.171 / 0.996698 一致，说明记录值可追溯且可复现。",
+    "n=2000 随机子集的 NMSE 在 -30.07 ~ -30.28 dB 波动（5 个种子），rho 在 0.99662 ~ 0.99676；记录值均落在抽样波动范围内。",
+    "误差分解为聚合能量口径：err_tap[t] 与 sig_tap[t] 在样本、32 个角度 bin、实虚部上求和；信号能量按官方指标同样减去 zero_point=0.5。",
+    "尾部误差高度集中在 tap 7-9（约 42%）与 tap 24-26（约 4.5%），并非均匀弥散；若据此推断尾部残差为「不可建模的噪声」需谨慎，也可能是解码器 stride-2 上采样带来的结构化伪影。"
+  ],
+  "verdict": "成立"
+}

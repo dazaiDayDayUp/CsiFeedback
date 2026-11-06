@@ -407,6 +407,21 @@
     "rho": 0.892363429069519
   },
   "cr_matrix": {
+    "16": [
+      {
+        "scenario": "indoor",
+        "cr": 16,
+        "seed": 0,
+        "nmse": -15.299979209899902,
+        "rho": 0.9835962057113647,
+        "extra": {
+          "channels": 8,
+          "depth": 8,
+          "angle_mode": "circular",
+          "loss": "metric"
+        }
+      }
+    ],
     "32": [
       {
         "scenario": "indoor",
@@ -414,6 +429,47 @@
         "seed": 0,
         "nmse": -11.485367774963379,
         "rho": 0.9654728174209595,
+        "extra": {
+          "channels": 8,
+          "depth": 8,
+          "angle_mode": "circular",
+          "loss": "metric"
+        }
+      }
+    ],
+    "4": [
+      {
+        "scenario": "indoor",
+        "cr": 4,
+        "seed": 0,
+        "nmse": -32.462318420410156,
+        "rho": 0.9968469738960266,
+        "extra": {
+          "channels": 8,
+          "depth": 8,
+          "angle_mode": "circular",
+          "loss": "metric"
+        }
+      },
+      {
+        "scenario": "indoor",
+        "cr": 4,
+        "seed": 1,
+        "nmse": -33.09302520751953,
+        "rho": 0.9968973994255066,
+        "extra": {
+          "channels": 8,
+          "depth": 8,
+          "angle_mode": "circular",
+          "loss": "metric"
+        }
+      },
+      {
+        "scenario": "indoor",
+        "cr": 4,
+        "seed": 2,
+        "nmse": -31.994712829589844,
+        "rho": 0.9967821836471558,
         "extra": {
           "channels": 8,
           "depth": 8,
@@ -437,21 +493,6 @@
         }
       }
     ],
-    "16": [
-      {
-        "scenario": "indoor",
-        "cr": 16,
-        "seed": 0,
-        "nmse": -15.299979209899902,
-        "rho": 0.9835962057113647,
-        "extra": {
-          "channels": 8,
-          "depth": 8,
-          "angle_mode": "circular",
-          "loss": "metric"
-        }
-      }
-    ],
     "8": [
       {
         "scenario": "indoor",
@@ -459,47 +500,6 @@
         "seed": 0,
         "nmse": -20.8054141998291,
         "rho": 0.9930707216262817,
-        "extra": {
-          "channels": 8,
-          "depth": 8,
-          "angle_mode": "circular",
-          "loss": "metric"
-        }
-      }
-    ],
-    "4": [
-      {
-        "scenario": "indoor",
-        "cr": 4,
-        "seed": 1,
-        "nmse": -33.09302520751953,
-        "rho": 0.9968973994255066,
-        "extra": {
-          "channels": 8,
-          "depth": 8,
-          "angle_mode": "circular",
-          "loss": "metric"
-        }
-      },
-      {
-        "scenario": "indoor",
-        "cr": 4,
-        "seed": 0,
-        "nmse": -32.462318420410156,
-        "rho": 0.9968469738960266,
-        "extra": {
-          "channels": 8,
-          "depth": 8,
-          "angle_mode": "circular",
-          "loss": "metric"
-        }
-      },
-      {
-        "scenario": "indoor",
-        "cr": 4,
-        "seed": 2,
-        "nmse": -31.994712829589844,
-        "rho": 0.9967821836471558,
         "extra": {
           "channels": 8,
           "depth": 8,
@@ -537,12 +537,11 @@
         "channels": 8,
         "depth": 8,
         "angle_mode": "circular",
-        "base_skip": false,
         "loss": "metric"
       },
-      "nmse": -28.548871994018555,
+      "nmse": -28.984291076660156,
       "sched": "cosine",
-      "dir": "20261106_072951"
+      "dir": "/home/wzh/myProjects/CsiFeedback-worktrees/cylinder_codec/experiments/axis_codec/indoor_cr4/20261105_172649"
     },
     {
       "extra": {
@@ -553,18 +552,7 @@
       },
       "nmse": -27.485322952270508,
       "sched": "cosine",
-      "dir": "20261106_054746"
-    },
-    {
-      "extra": {
-        "channels": 8,
-        "depth": 8,
-        "angle_mode": "circular",
-        "loss": "metric"
-      },
-      "nmse": -28.984291076660156,
-      "sched": "cosine",
-      "dir": "20261105_172649"
+      "dir": "/home/wzh/myProjects/CsiFeedback-worktrees/cylinder_codec/experiments/axis_codec/indoor_cr4/20261106_054746"
     },
     {
       "extra": {
@@ -575,7 +563,19 @@
       },
       "nmse": -28.736446380615234,
       "sched": "cosine",
-      "dir": "20261106_064004"
+      "dir": "/home/wzh/myProjects/CsiFeedback-worktrees/cylinder_codec/experiments/axis_codec/indoor_cr4/20261106_064004"
+    },
+    {
+      "extra": {
+        "channels": 8,
+        "depth": 8,
+        "angle_mode": "circular",
+        "base_skip": false,
+        "loss": "metric"
+      },
+      "nmse": -28.548871994018555,
+      "sched": "cosine",
+      "dir": "/home/wzh/myProjects/CsiFeedback-worktrees/cylinder_codec/experiments/axis_codec/indoor_cr4/20261106_072951"
     }
   ]
 }
