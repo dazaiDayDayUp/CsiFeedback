@@ -974,3 +974,29 @@ DFT 域循环卷积（严格圆群等变、32 参数/通道），时延轴用稠
 3. **高压缩比下 rho 改善更明显**（+0.040 at CR1/64 vs +0.00015 at CR1/4），说明
    在 NMSE 已经很低（CR1/4）时 rho 提升空间有限，而在码字极小时本模型保住了更多
    波束域结构。
+
+## 25. 论文最终结果（固定 checkpoint 复评，论文 Table II 数据源）
+
+为保证与 baseline 的公平对比，三个 baseline 的全部 5 个 CR 都用 `best_nmse.pth`
+（NMSE 列）/ `best_rho.pth`（rho 列）在测试集上重新推理，脚本为
+`paper/scripts/eval_baselines.py`，原始记录在 `docs/ideas/metrics/baseline_reeval.json`。
+baseline 的 checkpoint 由测试集选择（`select_best: "all"`），本模型由验证集选择
+（`select_best: "val_loss"`），比较对本模型更严格。
+
+| CR | CsiNet | CLNet | STNet | **AxisCodec** | Δ vs STNet |
+|----|--------|-------|-------|---------------|------------|
+| 1/4  | -9.99  | -27.88 | -30.17 | **-32.52 ± 0.55**（3 seed） | **+2.34** |
+| 1/8  | -11.12 | -15.57 | -19.28 | **-20.81** | **+1.53** |
+| 1/16 | -8.74  | -10.68 | -14.75 | **-15.30** | **+0.55** |
+| 1/32 | -8.50  | -8.95  | -9.51  | **-11.49** | **+1.98** |
+| 1/64 | -4.34  | -6.04  | -6.82  | **-8.94**  | **+2.12** |
+
+rho（AxisCodec / STNet）：0.9968/0.9967、0.9931/0.9914、0.9836/0.9812、
+0.9655/0.9431、0.9349/0.8917。
+
+- CR1/32 的 1000 epoch 运行（`experiments/axis_codec/indoor_cr32/20261106_174101`）
+  val 选择 epoch 990，复评 -11.485 dB / rho 0.96547。
+- 三个 CR1/4 种子的验证集选择 epoch（820/710/980）**恰好都是各自测试集最优点**，
+  因此结果不依赖选择策略（论文 V-B 的公平性陈述来源）。
+- 论文图表数据由 `paper/scripts/data_prep.py` 汇总到 `paper/data/meta.json`，
+  所有图由 `paper/scripts/make_fig*.py` 从该文件生成，PDF 为 `paper/main.pdf`。

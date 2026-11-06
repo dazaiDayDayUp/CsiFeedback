@@ -386,7 +386,7 @@ the head/tail split. Numbers are per-sample NMSE.}
 \subsection{Qualitative behaviour}
 Fig.~\ref{fig:qual} shows the same channel at two rates. At CR~$1/4$ the head looks
 identical to the ground truth for both models, yet the per-tap relative error over
-taps 2--6 is $1.5$--$2.3\%$ for STNet and $0.16$--$0.25\%$ for AxisCodec---an order
+taps 2--5 is $1.5$--$2.3\%$ for STNet and $0.16$--$0.25\%$ for AxisCodec---an order
 of magnitude---which sharpens the tap-3/tap-4 ridge in the third column. At
 CR~$1/16$ both models blur that ridge and the per-sample gap falls to $0.4$~dB,
 matching the matrix-level $0.55$~dB. The gain is thus a systematic reduction of the
@@ -402,7 +402,7 @@ contributor, the linear base second, and the geometric prior third---but the pri
 is also the cheapest, and it is the only one that reduces compute.
 
 A per-sample breakdown of the MSE run shows that the objective's gain is uniform
-across the power distribution ($1.4$--$1.7$~dB in every power quartile, 97.8\% of
+across the power distribution ($1.4$--$1.6$~dB in every power quartile, 97.5\% of
 samples improved). It does not come from re-weighting toward weak channels, as one
 might expect; it comes from optimising the reported quantity, including its
 heavy tail, and from better conditioning.
@@ -497,12 +497,14 @@ line marks the 300-epoch budget used for ablations.}
 \end{figure}
 
 Training is stable once the learning rate anneals: over the last 300 epochs the
-test NMSE varies with a standard deviation of $0.065$~dB ($0.027$~dB over the last
-100), so the $2.34$~dB margin is thirty-five times the noise of the final phase.
-Between epochs 90 and 360 the model occasionally collapses by 10--18~dB for one
-evaluation and recovers within twenty epochs; the training loss stays flat through
-these events, so they are generalisation transients rather than divergence, and
-validation-based selection absorbs them.
+test NMSE varies with a standard deviation of $0.07$--$0.10$~dB across seeds
+($0.03$~dB over the last 100), so the $2.34$~dB margin is more than twenty times
+the noise of the final phase.
+Between epochs 90 and 660 the model occasionally collapses by 8--18~dB for a
+single validation evaluation and recovers within twenty epochs
+(Fig.~\ref{fig:train}); the training loss stays flat through these events, so they
+are generalisation transients rather than divergence, and validation-based
+selection absorbs them.
 
 \section{Discussion}
 \textbf{Why the geometric prior is worth only 0.25~dB.} Periodicity is a boundary
