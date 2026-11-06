@@ -298,10 +298,11 @@ Baselines train with element-wise MSE, but the benchmark reports the per-user
 normalised error
 \begin{equation}
 \mathrm{NMSE}=\frac{1}{B}\sum_{i=1}^{B}
-\frac{\lVert\Hh_i-\Hb_i\rVert_F^2}{\lVert\Hb_i-0.5\rVert_F^2}.
+\frac{\lVert\hat x_i-x_i\rVert_F^2}{\lVert x_i-0.5\rVert_F^2}.
 \end{equation}
-They weight samples differently: MSE weights by power, NMSE does not, and its mean
-is dominated by the samples a model currently fails on. We minimise (4)
+Here $x_i$ is the two-channel image and $\hat x_i$ the reconstruction (3).
+The two weight samples differently: MSE weights by power, NMSE does not, and its
+mean is dominated by the samples a model currently fails on. We minimise (4)
 directly (without the logarithm) and---this matters for the ablation---select the
 checkpoint with the same quantity on the validation split. When an ablation
 replaces the training loss by MSE, validation and selection still use (4), so the
