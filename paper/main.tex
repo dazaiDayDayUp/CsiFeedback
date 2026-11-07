@@ -288,10 +288,11 @@ into the tail, where the nonlinear stack can work on it.
 \begin{figure*}[!t]
 \centering
 \includegraphics[width=\textwidth]{fig3_arch.pdf}
-\caption{AxisCodec. The encoder alternates a circulant angle mixer
-(32 parameters per channel, exact circular shift equivariance) with a dense delay
-mixer ($32^2$ parameters, one read-out per tap). The decoder adds a linear base
-$Pz$ and a nonlinear residual trunk before clipping to the valid CSI range.}
+\caption{AxisCodec. The encoder alternates a circulant angle mixer (32 parameters
+per channel, exact circular shift equivariance) with a dense delay mixer ($32^2$
+parameters, one read-out per tap); the lower panel expands one block, including its
+residual path. The decoder adds a linear base $Pz$ and a nonlinear residual trunk
+before clipping to the valid CSI range.}
 \label{fig:arch}
 \end{figure*}
 
