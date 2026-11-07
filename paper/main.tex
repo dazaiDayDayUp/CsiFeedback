@@ -413,7 +413,8 @@ reaches $-30.79$~dB, $0.62$~dB better than with MSE; with MSE, AxisCodec reaches
 $-29.49$~dB, $0.68$~dB worse than STNet. The objective alone thus buys $0.62$~dB
 and the architecture alone loses $0.68$, yet together they reach $-32.52$~dB,
 $1.73$~dB beyond STNet under the same objective: the linear base and the tail
-residual are what let the per-user reweighting act. A per-sample breakdown agrees: the gain is largest for the weakest channels.
+residual are what let the per-user reweighting act. A per-sample breakdown agrees: the gain is 1.4--1.6~dB per quartile at 300 epochs,
+2.6--3.3~dB at 1000, and largest for the weakest channels.
 
 \begin{table}[!t]
 \centering
@@ -543,15 +544,17 @@ energy is what invalidates parametric models here; on a more specular dataset, s
 as a CDL-C-like model with strong line-of-sight, path-based coding could become
 competitive again; our oracle procedure is the way to check. Multi-seed
 evidence covers CR~$1/4$; the other ratios are single-seed. The model costs
-$1.6\times$ STNet's FLOPs. Finally, the
-transients described above indicate a rougher optimisation landscape than STNet's,
-which is a clear target for future work.
+$1.6\times$ STNet's FLOPs. The latent is assumed noiseless, as in the baselines;
+how the prior interacts with a quantiser is left open. Finally, the transients
+described above indicate a rougher optimisation landscape than STNet's, which is a
+clear target for future work.
 
 \textbf{Reproducibility.} Every configuration is a YAML file fixing the model,
 optimiser, schedule and seed; each run writes a \texttt{metrics.json} with the
 commit, the selected checkpoint and its re-evaluated NMSE and $\rho$. Baselines use
 the repository's own implementations; the oracle fits, scripts and checkpoints
-behind every number and figure are included.
+behind every number and figure are included. A 1000-epoch run takes 3.9~h on one
+RTX~5090.
 
 \section{Conclusion}
 Compact parametric channel models do not describe COST2100: rate-matched oracle
@@ -561,7 +564,9 @@ representation and the distribution of the residual. Encoding that geometry as
 circulant angle mixing and dense delay mixing, splitting the decoder into a linear
 base and a nonlinear residual, and training on the reported per-user NMSE yields
 $-32.52\pm0.55$~dB at CR~$1/4$ against $-30.17$~dB for STNet, with equal
-effective parameters and a $1.6\times$ FLOP budget.
+effective parameters and a $1.6\times$ FLOP budget. The transferable part is the
+diagnostic: one rate-matched oracle fit tells whether a parametric codec is worth
+building on a new dataset.
 
 \begin{thebibliography}{24}
 \bibitem{wen2018} C.-K. Wen, W.-T. Shih, and S. Jin, ``Deep learning for massive

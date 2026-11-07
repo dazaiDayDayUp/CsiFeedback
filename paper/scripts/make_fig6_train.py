@@ -54,7 +54,7 @@ ax.plot(ep_a, nm_a.mean(0), color=style.C["blue"], lw=1.15, label="AxisCodec (3 
 ax.plot(ep_s, nm_s, color=style.C["orange"], lw=1.0, label="STNet (published recipe)")
 
 ax.axvline(300, color=style.C["grey"], lw=0.7, ls=(0, (2, 2)))
-ax.text(292, -1.2, "300-epoch ablation", fontsize=6.6, color="#4D5656",
+ax.text(286, -1.2, "300-epoch ablation", fontsize=6.6, color="#4D5656",
         va="top", ha="right")
 
 ax.set_xlim(0, 1000)
@@ -62,7 +62,7 @@ ax.set_ylim(-34, 0)
 ax.set_xlabel("epoch")
 ax.set_ylabel("validation NMSE (dB)")
 ax.set_xticks([0, 200, 400, 600, 800, 1000])
-ax.legend(loc="upper right", bbox_to_anchor=(0.995, 0.995))
+ax.legend(loc="upper right", bbox_to_anchor=(0.995, 0.995), fontsize=6.9)
 
 for ext in ("png", "pdf"):
     fig.savefig(Path(__file__).resolve().parent.parent / "figures" / f"fig6_train.{ext}")

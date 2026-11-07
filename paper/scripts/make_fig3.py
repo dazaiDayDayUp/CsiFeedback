@@ -86,9 +86,9 @@ def thumb(x0, y0, w, h, label):
 thumb(2.0, 62.0, 8.5, 28.0, "$H$")
 ax.text(6.25, 51.5, "$2\\times32\\times32$", ha="center", fontsize=6.8, color=INK)
 arrow((11.0, 76.0), (13.4, 76.0))
-rbox(13.8, 66.0, 19.6, 86.0, fc="#F2F4F6", ec=GREY)
-ax.text(16.7, 79.0, "stem", ha="center", fontsize=7.6)
-ax.text(16.7, 72.0, "$3\\times3$ conv\nLN + GELU", ha="center", va="center", fontsize=6.8, color=INK)
+rbox(13.6, 63.5, 19.8, 88.5, fc="#F2F4F6", ec=GREY)
+ax.text(16.7, 82.0, "stem", ha="center", fontsize=7.6)
+ax.text(16.7, 71.5, "$3\\times3$ conv\nLN + GELU", ha="center", va="center", fontsize=6.6, color=INK)
 
 arrow((20.0, 76.0), (22.6, 76.0))
 for dx, dy in ((1.6, 2.0), (0.8, 1.0)):
@@ -97,9 +97,9 @@ rbox(23.2, 64.0, 36.6, 86.0, fc="#F5F9FD", ec=BLUE, lw=0.9)
 ax.text(29.9, 78.5, "AxisBlock $\\times 8$", ha="center", fontsize=8.0, fontweight="bold", color=BLUE)
 ax.text(29.9, 70.5, "angle $\\circlearrowright$  /  delay dense", ha="center", fontsize=6.8, color=INK)
 arrow((37.4, 76.0), (40.0, 76.0))
-rbox(40.4, 66.0, 46.0, 86.0, fc="#F2F4F6", ec=GREY)
-ax.text(43.2, 79.0, "FC", ha="center", fontsize=7.6)
-ax.text(43.2, 72.0, "$2048\\rightarrow D$", ha="center", fontsize=6.8, color=INK)
+rbox(39.7, 63.5, 46.7, 88.5, fc="#F2F4F6", ec=GREY)
+ax.text(43.2, 82.0, "FC", ha="center", fontsize=7.6)
+ax.text(43.2, 71.5, "$2048\\rightarrow D$", ha="center", fontsize=6.6, color=INK)
 
 arrow((46.4, 76.0), (48.6, 76.0))
 ax.add_patch(FancyBboxPatch((49.0, 64.0), 2.6, 24.0, boxstyle="round,pad=0,rounding_size=0.6",
@@ -124,13 +124,13 @@ ax.add_patch(Circle((73.4, 76.0), 2.2, fc="white", ec=INK, lw=0.9, zorder=6))
 ax.text(73.4, 76.0, "$+$", ha="center", va="center", fontsize=10.0, zorder=7)
 arrow((69.8, 86.0), (72.6, 78.0), color=GREEN, lw=1.0)
 arrow((69.8, 60.0), (72.6, 73.6), color=ORANGE, lw=1.0)
-ax.text(73.4, 69.5, "clip $[0,1]$", ha="center", fontsize=6.8, color=INK)
+
 thumb(79.0, 62.0, 8.5, 28.0, "$\\hat H$")
 arrow((75.8, 76.0), (78.4, 76.0))
 ax.text(66.0, 47.0, "$\\hat H = Pz + g_\\theta(z)$", ha="center", fontsize=7.8, color=INK)
 
 # ==================== AxisBlock 展开 ====================
-rbox(2.0, 6.0, 97.0, 38.0, fc="#FBFBFC", ec="#B9BEC3", lw=0.7, r=1.6)
+rbox(2.0, 6.0, 99.0, 38.0, fc="#FBFBFC", ec="#B9BEC3", lw=0.7, r=1.6)
 ax.text(4.6, 31.5, "AxisBlock", ha="left", fontsize=8.2, fontweight="bold", color=INK)
 ax.text(41.0, 33.0, "per-position LN; global mixing on both axes", ha="left", fontsize=6.6, color=GREY)
 
@@ -158,13 +158,14 @@ for x0, x1, name, fc, ec, icon in mods:
         ax.text((x0 + x1) / 2, cy - 8.6, "$C\\rightarrow 2C\\rightarrow C$", ha="center", fontsize=6.6, color=GREY)
 for (_, x1, *_), (nx0, *_rest) in zip(mods[:-1], mods[1:]):
     arrow((x1 + 0.25, cy), (nx0 - 0.25, cy), lw=0.8, ms=5)
-ax.text(93.0, cy, "$+$", ha="center", va="center", fontsize=11.0, color=INK)
+ax.add_patch(Circle((93.0, cy), 2.0, fc="white", ec=INK, lw=0.8, zorder=6))
+ax.text(93.0, cy, "$+$", ha="center", va="center", fontsize=8.2, color=INK, zorder=7)
 arrow((88.4, cy), (91.6, cy), lw=0.8, ms=5)
 # 残差旁路
 ax.text(4.6, 16.8, "$x$", fontsize=8.2, color=INK, ha="center")
 arrow((5.4, cy), (11.4, cy), lw=0.8, ms=5)
-arrow((93.0, cy + 3.0), (95.4, cy + 3.0), lw=0.8, ms=5)
-ax.text(96.2, 16.8, "$x + \\mathrm{LN}(\\cdot)$", fontsize=7.2, color=INK, ha="left")
+
+
 ax.plot([4.6, 4.6, 93.0, 93.0], [cy + 3.0, 29.0, 29.0, cy + 3.0], color=GREY, lw=0.7, ls=(0, (2, 1.6)), zorder=2)
 
 for ext in ("png", "pdf"):

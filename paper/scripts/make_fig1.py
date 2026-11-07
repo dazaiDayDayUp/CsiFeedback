@@ -57,8 +57,8 @@ style.panel_label(ax, "(a)", x=-0.30, y=1.03)
 # ---------------- (b) circular angular heat-ring ----------------
 axp = fig.add_subplot(gs[1])
 axp.set_aspect("equal")
-axp.set_xlim(-1.45, 1.45)
-axp.set_ylim(-1.62, 1.58)
+axp.set_xlim(-1.34, 1.34)
+axp.set_ylim(-1.40, 1.34)
 axp.axis("off")
 from matplotlib.patches import Wedge
 logp = np.log10(angle)
@@ -71,15 +71,15 @@ for b in range(32):
                         fc=plt.get_cmap("magma")(cn(logp[b])), ec="white", lw=0.35))
 # 接缝（bin 31 与 bin 0 之间）
 sa = np.deg2rad(90 + 360 / 64)
-axp.plot([0.40 * np.cos(sa), 1.09 * np.cos(sa)], [0.40 * np.sin(sa), 1.09 * np.sin(sa)],
+axp.plot([0.36 * np.cos(sa), 1.12 * np.cos(sa)], [0.36 * np.sin(sa), 1.12 * np.sin(sa)],
          color=style.C["red"], lw=0.9, ls=(0, (2.4, 1.8)), zorder=6)
 for b, txt in ((8, "8"), (16, "16"), (24, "24")):
     tb = np.deg2rad(90 - 360 * b / 32)
     axp.text(1.16 * np.cos(tb), 1.16 * np.sin(tb), txt, ha="center", va="center",
              fontsize=7.2, color="#33363A")
-axp.text(0.5, 1.10, "seam 31$\,$|$\,$0", transform=axp.transAxes, ha="center",
-         va="bottom", fontsize=6.9, color=style.C["red"])
-axp.text(0, -1.50, "angle bin (circular)", ha="center", fontsize=7.4)
+axp.text(0.0, 1.13, "seam 31$\,$|$\,$0", ha="center", va="bottom",
+         fontsize=6.9, color=style.C["red"])
+axp.text(0, -1.30, "angle bin (circular)", ha="center", va="top", fontsize=7.4)
 style.panel_label(axp, "(b)", x=0.02, y=1.0)
 
 # ---------------- (c) delay profile ----------------
