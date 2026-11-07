@@ -54,33 +54,32 @@ cb.locator = plt.matplotlib.ticker.LogLocator(numticks=2)
 cb.update_ticks()
 style.panel_label(ax, "(a)", x=-0.30, y=1.03)
 
-# ---------------- (b) polar angular profile ----------------
-axp = fig.add_subplot(gs[1], projection="polar")
-th = np.linspace(0, 2 * np.pi, 33)
-prof = np.concatenate([angle, angle[:1]])
-axp.plot(th, prof, color=style.C["blue"], lw=1.3)
-axp.fill(th, prof, color=style.C["blue"], alpha=0.18)
-axp.set_theta_zero_location("N")
-axp.set_theta_direction(-1)
-axp.set_xticks(np.deg2rad([0, 90, 180, 270]))
-axp.set_xticklabels(["0", "8", "16", "24"], fontsize=7)
-axp.set_yticks([0.04, 0.08])
-axp.set_yticklabels(["4%", "8%"], fontsize=6.8, color=style.C["grey"])
-axp.set_rlabel_position(203)
-axp.set_ylim(0, 0.135)
-axp.tick_params(pad=-2.0)
-axp.grid(color=style.C["lightgrey"], lw=0.5)
-seam = -np.pi / 32
-axp.plot([seam, seam], [0, 0.130], color=style.C["red"], lw=0.8, ls=(0, (2.2, 1.6)), zorder=6)
-axp.plot([0], [angle[0]], "o", ms=2.4, color=style.C["blue"], zorder=7)
-axp.plot([2 * np.pi * 31 / 32], [angle[31]], "o", ms=2.4, color=style.C["blue"], zorder=7)
-axp.text(seam - 0.12, 0.030, "seam", ha="right", va="center",
-         fontsize=7.0, color=style.C["red"])
-axp.spines["polar"].set_linewidth(0.7)
-axp.spines["polar"].set_color(style.C["grey"])
-axp.text(0.5, -0.30, "angle bin (circular)", transform=axp.transAxes,
-         ha="center", fontsize=7.4)
-style.panel_label(axp, "(b)", x=-0.13, y=1.02)
+# ---------------- (b) circular angular heat-ring ----------------
+axp = fig.add_subplot(gs[1])
+axp.set_aspect("equal")
+axp.set_xlim(-1.45, 1.45)
+axp.set_ylim(-1.62, 1.58)
+axp.axis("off")
+from matplotlib.patches import Wedge
+logp = np.log10(angle)
+cn = plt.matplotlib.colors.Normalize(vmin=logp.min(), vmax=logp.max())
+for b in range(32):
+    # bin 0 在正上方，编号顺时针；楔形之间留 6% 缝隙
+    center = 90 - 360 * b / 32
+    half = 360 / 32 / 2 * 0.94
+    axp.add_patch(Wedge((0, 0), 1.0, center - half, center + half, width=0.52,
+                        fc=plt.get_cmap("magma")(cn(logp[b])), ec="white", lw=0.35))
+# 接缝（bin 31 与 bin 0 之间）
+sa = np.deg2rad(90 + 360 / 64)
+axp.plot([0.40 * np.cos(sa), 1.09 * np.cos(sa)], [0.40 * np.sin(sa), 1.09 * np.sin(sa)],
+         color=style.C["red"], lw=0.9, ls=(0, (2.4, 1.8)), zorder=6)
+for b, txt in ((0, "0"), (31, "31"), (8, "8"), (16, "16"), (24, "24")):
+    tb = np.deg2rad(90 - 360 * b / 32)
+    axp.text(1.19 * np.cos(tb), 1.19 * np.sin(tb), txt, ha="center", va="center",
+             fontsize=7.2, color="#33363A")
+axp.text(0.16, 1.13, "seam", fontsize=7.0, color=style.C["red"], ha="left", va="center")
+axp.text(0, -1.50, "angle bin (circular)", ha="center", fontsize=7.4)
+style.panel_label(axp, "(b)", x=0.02, y=1.0)
 
 # ---------------- (c) delay profile ----------------
 axd = fig.add_subplot(gs[2])
