@@ -576,6 +576,96 @@
       "nmse": -28.548871994018555,
       "sched": "cosine",
       "dir": "/home/wzh/myProjects/CsiFeedback-worktrees/cylinder_codec/experiments/axis_codec/indoor_cr4/20261106_072951"
+    },
+    {
+      "extra": {
+        "channels": 8,
+        "depth": 8,
+        "angle_mode": "circular",
+        "loss": "metric"
+      },
+      "nmse": -29.191425323486328,
+      "sched": "cosine",
+      "dir": "/home/wzh/myProjects/CsiFeedback-worktrees/cylinder_codec/experiments/axis_codec/indoor_cr4/20261107_002446"
+    },
+    {
+      "extra": {
+        "channels": 8,
+        "depth": 8,
+        "angle_mode": "circular",
+        "loss": "mse"
+      },
+      "nmse": -28.002918243408203,
+      "sched": "cosine",
+      "dir": "/home/wzh/myProjects/CsiFeedback-worktrees/cylinder_codec/experiments/axis_codec/indoor_cr4/20261107_013930"
+    },
+    {
+      "extra": {
+        "channels": 8,
+        "depth": 8,
+        "angle_mode": "circular",
+        "loss": "mse"
+      },
+      "nmse": -27.655780792236328,
+      "sched": "cosine",
+      "dir": "/home/wzh/myProjects/CsiFeedback-worktrees/cylinder_codec/experiments/axis_codec/indoor_cr4/20261107_030342"
+    },
+    {
+      "extra": {
+        "channels": 8,
+        "depth": 8,
+        "angle_mode": "circular",
+        "base_skip": false,
+        "loss": "metric"
+      },
+      "nmse": -27.507535934448242,
+      "sched": "cosine",
+      "dir": "/home/wzh/myProjects/CsiFeedback-worktrees/cylinder_codec/experiments/axis_codec/indoor_cr4/20261107_035609"
+    },
+    {
+      "extra": {
+        "channels": 8,
+        "depth": 8,
+        "angle_mode": "circular",
+        "base_skip": false,
+        "loss": "metric"
+      },
+      "nmse": -27.883785247802734,
+      "sched": "cosine",
+      "dir": "/home/wzh/myProjects/CsiFeedback-worktrees/cylinder_codec/experiments/axis_codec/indoor_cr4/20261107_044834"
+    },
+    {
+      "extra": {
+        "channels": 8,
+        "depth": 8,
+        "angle_mode": "dense",
+        "loss": "metric"
+      },
+      "nmse": -29.065000534057617,
+      "sched": "cosine",
+      "dir": "/home/wzh/myProjects/CsiFeedback-worktrees/cylinder_codec/experiments/axis_codec/indoor_cr4/20261107_054112"
+    },
+    {
+      "extra": {
+        "channels": 8,
+        "depth": 8,
+        "angle_mode": "dense",
+        "loss": "metric"
+      },
+      "nmse": -28.296142578125,
+      "sched": "cosine",
+      "dir": "/home/wzh/myProjects/CsiFeedback-worktrees/cylinder_codec/experiments/axis_codec/indoor_cr4/20261107_063101"
+    },
+    {
+      "extra": {
+        "channels": 8,
+        "depth": 8,
+        "angle_mode": "circular",
+        "loss": "metric"
+      },
+      "nmse": -29.947185516357422,
+      "sched": "cosine",
+      "dir": "/home/wzh/myProjects/CsiFeedback-worktrees/cylinder_codec/experiments/axis_codec/indoor_cr4/20261107_092159"
     }
   ]
 }

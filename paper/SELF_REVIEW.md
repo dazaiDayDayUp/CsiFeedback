@@ -71,7 +71,8 @@
 | head→tail 岭回归 R² | 0.235（正文写 23%） | 40k 训练样本独立复算 |
 | 消融四分位增益（300 ep） | 1.42–1.60 dB | 300-epoch checkpoint 复算 |
 | 消融四分位增益（1000 ep） | 2.58–3.31 dB（弱信道最大） | 1000-epoch checkpoint 复算 |
-| 目标函数差距 | 1.50 dB（300 ep）→ 3.0 dB（1000 ep） | 两组 MSE/metric 运行对比 |
+| 消融三种子均值±std | full −29.37±0.51；MSE −27.72±0.26；nobase −27.98±0.53；dense −28.70±0.39 | `docs/ideas/metrics/*_300ep_seed{0,1,2}.json` |
+| 目标函数差距 | 1.66 dB（300 ep，三种子）→ 3.0 dB（1000 ep） | 两组 MSE/metric 运行对比 |
 | 目标 × 结构 2×2 | STNet −30.17/−30.79，AxisCodec −29.49/−32.52 | `baseline_reeval.json` + 本次对照运行 |
 | PCA-512 误差份额 | 0.3%（taps 0–3）/ 99.7%（4–31） | `experiments/pca/indoor_512.pt` 复算 |
 | 参数 / FLOPs | 2.13 M / 0.022 G（STNet 2.13 M 有效 / 0.014 G） | `analysis/complexity.json` |

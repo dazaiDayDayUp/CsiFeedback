@@ -23,3 +23,14 @@ git commit。
 
 论文图表由 `paper/scripts/data_prep.py` 读取本目录（实时实验目录存在时优先使用实时
 结果，否则用这里的归档），再生成 `paper/data/meta.json` 与全部插图。
+
+## 消融与公平性对照（300 epoch / 1000 epoch）
+
+| 文件 | 说明 |
+|---|---|
+| `axis_codec_indoor_cr4_300ep_seed{0,1,2}.json` | 完整模型，三种子，-29.37 ± 0.51 dB |
+| `axis_codec_indoor_cr4_mse_300ep_seed{0,1,2}.json` | MSE 目标，三种子，-27.72 ± 0.26 dB |
+| `axis_codec_indoor_cr4_nobase_300ep_seed{0,1,2}.json` | 去线性基座，三种子，-27.98 ± 0.53 dB |
+| `axis_codec_indoor_cr4_densemix_300ep_seed{0,1,2}.json` | 稠密角度混合，三种子，-28.70 ± 0.39 dB |
+| `axis_codec_indoor_cr4_mse_1000ep_seed0.json` | 完整模型 + MSE 目标，1000 epoch，-29.49 dB |
+| `stnet_metric_indoor_cr4_1000ep_seed0.json` | STNet + 逐用户 NMSE 目标（公平性对照），-30.79 dB |
