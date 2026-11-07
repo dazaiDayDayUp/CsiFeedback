@@ -1,4 +1,4 @@
-"""Fig.4 率失真：STNet / AxisCodec / PCA / 自由位置稀疏 oracle vs 压缩比。"""
+"""Fig.4 率失真：主图（4 条曲线）+ 下方增益条（相对 STNet）+ 顶部码字维度轴。"""
 
 import json
 import sys
@@ -19,52 +19,75 @@ oracle = meta["oracle"]
 base = {int(k[2:]): v[0] for k, v in meta["baseline"].items()}
 crs = [4, 8, 16, 32, 64]
 budget = {cr: 2048 // cr for cr in crs}
+pos = np.arange(len(crs))
 
 pca = [oracle["pca"][str(budget[cr])] for cr in crs]
-# top-k oracle：k = budget/2（实数预算换成复系数个数）
 topk = [oracle["topk"][str(budget[cr] // 2)] for cr in crs]
-st = [base[cr] for cr in crs]
+st = np.array([base[cr] for cr in crs])
 
-ours, ours_err, ours_x = [], [], []
+ours, ours_err = [], []
 cm = meta["cr_matrix"]
 for cr in crs:
-    rows = cm.get(str(cr), [])
-    if not rows:
-        continue
-    v = np.array([r["nmse"] for r in rows], dtype=float)
+    v = np.array([r["nmse"] for r in cm[str(cr)]], dtype=float)
     ours.append(v.mean())
     ours_err.append(v.std(ddof=1) if len(v) > 1 else 0.0)
-    ours_x.append(cr)
+ours = np.array(ours)
+ours_err = np.array(ours_err)
+gain = st - ours
 
-fig, ax = plt.subplots(figsize=(style.COL, 2.35))
-fig.subplots_adjust(left=0.165, right=0.975, top=0.955, bottom=0.235)
+fig = plt.figure(figsize=(style.COL, 2.30))
+gs = fig.add_gridspec(2, 1, height_ratios=[3.45, 1.10], hspace=0.13,
+                      left=0.155, right=0.975, top=0.875, bottom=0.175)
+ax = fig.add_subplot(gs[0])
+axb = fig.add_subplot(gs[1], sharex=ax)
 
-x = np.array(crs)
-ax.plot(x, pca, "s--", color="#9A9A9A", ms=3.6, lw=1.0, mfc="w", mew=0.9, label="PCA (linear)")
-ax.plot(x, topk, "v-", color="#1C1C1C", ms=3.8, lw=1.0, mfc="w", mew=0.9,
+# ---------------- 主图 ----------------
+ax.plot(pos, pca, "--s", color="#9AA0A6", ms=3.4, lw=1.0, mfc="white", mew=0.9,
+        label="PCA (linear)")
+ax.plot(pos, topk, ":v", color="#3A3D40", ms=3.8, lw=1.1, mfc="white", mew=0.9,
         label="sparse oracle")
-ax.plot(x, st, "o-", color=style.C["orange"], ms=4.0, lw=1.1, label="STNet")
-ax.errorbar(ours_x, ours, yerr=ours_err, fmt="D-", color=style.C["blue"], ms=4.2, lw=1.4,
-            capsize=2.6, elinewidth=1.2, capthick=1.0, label="AxisCodec")
+ax.plot(pos, st, "-o", color=style.C["orange"], ms=4.0, lw=1.25, label="STNet")
+ax.errorbar(pos, ours, yerr=ours_err, fmt="-D", color=style.C["blue"], ms=4.2,
+            lw=1.5, capsize=2.4, elinewidth=1.0, capthick=0.9, label="AxisCodec")
 
-for cr, o, sb in zip(ours_x, ours, [base[c] for c in ours_x]):
-    ax.text(cr, -0.145, f"{sb - o:+.2f}", transform=ax.get_xaxis_transform(),
-            ha="center", va="top", fontsize=7.0, color=style.C["blue"])
-
-ax.set_xscale("log", base=2)
-ax.set_xticks(crs)
-ax.set_xticklabels([f"1/{c}" for c in crs])
-ax.set_xlabel("compression ratio", labelpad=18)
-ax.set_ylabel("NMSE (dB)")
-ax.set_xlim(3.4, 78)
-ax.set_ylim(-34.5, -2.2)
-ax.grid(axis="y", color="#E8E8E8", lw=0.5)
+ax.set_ylabel("NMSE (dB)", fontsize=7.8)
+ax.set_ylim(-35.0, -1.5)
+ax.set_yticks([-30, -25, -20, -15, -10, -5])
+ax.set_xlim(-0.45, 4.45)
+ax.grid(axis="y", color="#ECECEC", lw=0.55)
 ax.set_axisbelow(True)
-leg = ax.legend(loc="lower right", ncol=1, fontsize=7.2, handlelength=1.7,
-                borderaxespad=0.4, frameon=True, framealpha=0.92)
-leg.get_frame().set_edgecolor(style.C["lightgrey"])
-leg.get_frame().set_linewidth(0.5)
+ax.tick_params(axis="x", bottom=False, labelbottom=False)
+for s in ("top", "right"):
+    ax.spines[s].set_visible(False)
+ax.spines["bottom"].set_visible(False)
+ax.legend(loc="lower right", ncol=2, frameon=False, fontsize=6.5, handlelength=1.6,
+          columnspacing=0.9, handletextpad=0.4, borderaxespad=0.2)
 
+# 顶部码字维度
+axt = ax.secondary_xaxis("top")
+axt.set_xticks(pos)
+axt.set_xticklabels([str(budget[cr]) for cr in crs])
+axt.tick_params(length=2.2, labelsize=6.5, pad=1.5)
+axt.set_xlabel("latent dimension $D$", fontsize=7.2, labelpad=1.5)
+axt.spines["top"].set_linewidth(0.7)
+
+# ---------------- 增益条 ----------------
+axb.bar(pos, gain, width=0.52, color=style.C["blue"], alpha=0.9, zorder=3)
+axb.axhline(0, color="#1C1C1C", lw=0.8, zorder=4)
+for x, g in zip(pos, gain):
+    axb.text(x, g + 0.12, f"{g:+.2f}", ha="center", va="bottom", fontsize=6.8,
+             color=style.C["blue"])
+axb.set_ylim(0, 3.1)
+axb.set_yticks([0, 1, 2, 3])
+axb.set_ylabel("gain (dB)", fontsize=7.8, labelpad=2)
+axb.set_xticks(pos)
+axb.set_xticklabels([f"1/{c}" for c in crs])
+axb.set_xlabel("compression ratio", labelpad=2)
+axb.tick_params(length=2.4, pad=2, labelsize=7.0)
+axb.grid(axis="y", color="#F0F0F0", lw=0.5)
+axb.set_axisbelow(True)
+for s in ("top", "right"):
+    axb.spines[s].set_visible(False)
 
 for ext in ("png", "pdf"):
     fig.savefig(Path(__file__).resolve().parent.parent / "figures" / f"fig4_rd.{ext}")

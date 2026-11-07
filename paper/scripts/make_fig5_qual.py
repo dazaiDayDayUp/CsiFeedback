@@ -134,7 +134,7 @@ for r, cr in enumerate(rows):
 cax = fig.add_axes([0.30, 0.055, 0.42, 0.032])
 cb = fig.colorbar(im_mag, cax=cax, orientation="horizontal")
 cb.set_label("$|H|$ (dB re sample peak)", fontsize=6.8, labelpad=4.5)
-cb.ax.tick_params(labelsize=6.2, length=2, pad=1.2)
+cb.ax.tick_params(labelsize=6.8, length=2, pad=1.2)
 cb.outline.set_linewidth(0.5)
 cb.set_ticks([-40, -30, -20, -10, 0])
 

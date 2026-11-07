@@ -25,7 +25,7 @@ angle = g["angle_profile"]
 cum = g["delay_cum"]
 
 fig = plt.figure(figsize=(style.DBL, 2.0))
-gs = gridspec.GridSpec(1, 3, width_ratios=[1.05, 0.95, 1.16], wspace=0.52,
+gs = gridspec.GridSpec(1, 3, width_ratios=[1.05, 0.95, 1.16], wspace=0.60,
                        left=0.072, right=0.972, top=0.86, bottom=0.215)
 
 # ---------------- (a) energy map, first 8 taps ----------------
@@ -73,11 +73,12 @@ for b in range(32):
 sa = np.deg2rad(90 + 360 / 64)
 axp.plot([0.40 * np.cos(sa), 1.09 * np.cos(sa)], [0.40 * np.sin(sa), 1.09 * np.sin(sa)],
          color=style.C["red"], lw=0.9, ls=(0, (2.4, 1.8)), zorder=6)
-for b, txt in ((0, "0"), (31, "31"), (8, "8"), (16, "16"), (24, "24")):
+for b, txt in ((8, "8"), (16, "16"), (24, "24")):
     tb = np.deg2rad(90 - 360 * b / 32)
-    axp.text(1.19 * np.cos(tb), 1.19 * np.sin(tb), txt, ha="center", va="center",
+    axp.text(1.16 * np.cos(tb), 1.16 * np.sin(tb), txt, ha="center", va="center",
              fontsize=7.2, color="#33363A")
-axp.text(0.16, 1.13, "seam", fontsize=7.0, color=style.C["red"], ha="left", va="center")
+axp.text(0.5, 1.10, "seam 31$\,$|$\,$0", transform=axp.transAxes, ha="center",
+         va="bottom", fontsize=6.9, color=style.C["red"])
 axp.text(0, -1.50, "angle bin (circular)", ha="center", fontsize=7.4)
 style.panel_label(axp, "(b)", x=0.02, y=1.0)
 
@@ -86,7 +87,7 @@ axd = fig.add_subplot(gs[2])
 n = np.arange(32)
 axd.semilogy(n, delay, "o-", color=style.C["orange"], ms=2.3, lw=1.2, mfc="w", mew=0.9)
 axd.set_xlabel("delay tap $n_\\tau$", labelpad=2.0)
-axd.set_ylabel("normalized energy", labelpad=2.0)
+axd.set_ylabel("normalized energy", labelpad=4.5)
 axd.set_xlim(-1, 32)
 axd.set_ylim(4e-5, 1.4)
 axd.set_yticks([1e-4, 1e-3, 1e-2, 1e-1, 1])

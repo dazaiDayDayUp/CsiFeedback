@@ -49,7 +49,7 @@ def setup():
         "figure.dpi": 200,
         "savefig.dpi": 400,
         "savefig.bbox": "tight",
-        "savefig.pad_inches": 0.01,
+        "savefig.pad_inches": 0.03,
         "pdf.fonttype": 42,
         "hatch.linewidth": 0.45,
         "ps.fonttype": 42,
