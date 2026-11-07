@@ -82,7 +82,7 @@ hgt = to_complex(gt)
 peak = np.abs(hgt).max()
 gt_db = 20 * np.log10(np.abs(hgt) / peak + 1e-9)
 
-fig = plt.figure(figsize=(style.DBL, 2.95))
+fig = plt.figure(figsize=(style.DBL, 2.80))
 gs = fig.add_gridspec(2, 3, left=0.055, right=0.985, top=0.865, bottom=0.225,
                       wspace=0.06, hspace=0.16)
 mag_norm = PowerNorm(gamma=0.55, vmin=-40, vmax=0)

@@ -46,7 +46,7 @@ ep_a = ep_a[0]
 nm_a = np.vstack(nm_a)
 ep_s, nm_s = read_stnet(stnet_log)
 
-fig, ax = plt.subplots(figsize=(style.COL, 2.15))
+fig, ax = plt.subplots(figsize=(style.COL, 1.98))
 fig.subplots_adjust(left=0.155, right=0.985, top=0.965, bottom=0.215)
 
 ax.fill_between(ep_a, nm_a.min(0), nm_a.max(0), color=style.C["blue"], alpha=0.20, lw=0)
